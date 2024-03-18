@@ -44,10 +44,10 @@ tools = ["git", "iperf3m", "iperf3", "python3", "tcpdump", "tmux", "vim"]
 print(device.shell("su -c 'cd /sdcard/wmnl-handoff-research && /data/git pull'"))
 for tool in tools:
     if args.device[:2] == "sm":
-        device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimentation-tools/android/sm-script/termux-tools/{} /bin/'".format(tool))
+        device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools/android/sm-script/termux-tools/{} /bin/'".format(tool))
         device.shell("su -c 'chmod +x /bin/{}'".format(tool))
     elif args.device[:2] == "xm":
-        device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimentation-tools/android/xm-script/termux-tools/{} /sbin/'".format(tool))
+        device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools/android/xm-script/termux-tools/{} /sbin/'".format(tool))
         device.shell("su -c 'chmod +x /sbin/{}'".format(tool))
 print("-----------------------------------")
 
