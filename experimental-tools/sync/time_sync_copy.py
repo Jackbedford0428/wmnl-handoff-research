@@ -76,10 +76,13 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--server", action="store_true", help="server mode")
     parser.add_argument("-H", "--host", type=str, help="host: e.g., 140.112.xx.xxx", default="140.112.20.183")
     parser.add_argument("-p", "--port", type=int, help="port", default=3298)
+    parser.add_argument("-n", "--number", type=int, help="number of packet per round", default=500)
     args = parser.parse_args()
     
     HOST = args.host
     PORT = args.port
+    num_packet_per_round = args.number
+    packet_interval = 0
 
     # client
     if args.client:
@@ -102,8 +105,6 @@ if __name__ == "__main__":
         server_addr = (HOST, PORT)
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(3)
-        num_packet_per_round = 10
-        packet_interval = 0
 
         timestamp_client = []
         timestamp_server = []
