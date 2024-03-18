@@ -7,8 +7,22 @@ import os
 import sys
 import argparse
 import subprocess
-from device_to_port import device_to_port
-from device_to_serial import device_to_serial
+import json
+import socket
+# from device_to_port import device_to_port
+# from device_to_serial import device_to_serial
+
+
+with open('../../../device_to_serial.json', 'r') as f:
+        json_data = json.load(f)
+        device_to_serial = json_data["device_to_serial"]
+        serial_to_device = json_data["serial_to_device"]
+        
+with open('../../../device_to_port.json', 'r') as f:
+    json_data = json.load(f)
+    device_to_port = json_data["device_to_port"]
+    port_to_device = json_data["port_to_device"]
+
 
 #=================argument parsing======================
 parser = argparse.ArgumentParser()
@@ -80,6 +94,12 @@ def all_process_end(procs):
         if is_alive(p):
             return False
     return True
+
+
+# TCP control socket
+s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s_tcp.connect((HOST, 3299))
+
 
 procs = []
 

@@ -27,44 +27,28 @@ parser.add_argument("-t", "--time", type=int,
 args = parser.parse_args()
 
 
-
-length_packet = int(args.length)
-
-if args.bitrate[-1] == 'k':
-    bandwidth = int(args.bitrate[:-1]) * 1e3
-elif args.bitrate[-1] == 'M':
-    bandwidth = int(args.bitrate[:-1]) * 1e6
-else:
-    bandwidth = int(args.bitrate)
-
-print("bitrate:", bandwidth)
-
-total_time = args.time
-
-expected_packet_per_sec = bandwidth / (length_packet << 3)
-sleeptime = 1.0 / expected_packet_per_sec
-
-
 #=================other variables========================
-HOST = args.host # Lab 249
+HOST = args.host  # Lab 249
 dev = args.device
 ports = args.ports
 
 length_packet = int(args.length)
 
 if args.bitrate[-1] == 'k':
-    bandwidth = int(args.bitrate[:-1]) * 1e3
+    bitrate = int(args.bitrate[:-1]) * 1e3
 elif args.bitrate[-1] == 'M':
-    bandwidth = int(args.bitrate[:-1]) * 1e6
+    bitrate = int(args.bitrate[:-1]) * 1e6
 else:
-    bandwidth = int(args.bitrate)
-
-# print("bitrate:", bandwidth)
+    bitrate = int(args.bitrate)
+print("bitrate:", args.bitrate)
 
 total_time = args.time
 
-expected_packet_per_sec = bandwidth / (length_packet << 3)
-sleeptime = 1.0 / expected_packet_per_sec
+expected_packet_per_sec = bitrate / (length_packet << 3)
+if args.bitrate == '0':
+    sleeptime = 0
+else:
+    sleeptime = 1.0 / expected_packet_per_sec
 
 print(ports)
 
