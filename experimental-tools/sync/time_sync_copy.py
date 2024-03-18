@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-import sys
 import socket
 import time
 import json
 import datetime as dt
+import argparse
 
-HOST = '140.112.20.183'
-PORT = 3298
-dirpath = './log'
 
 def mean(numbers):
     if len(numbers) == 0:
@@ -32,7 +29,7 @@ def quantile(data, q):
         return lower + (upper - lower) * (index - int(index))
 
 def qset_bdd(client_rtt):
-    # 找 outliers 的判斷範圍
+    # 找 Outliers 的判斷範圍
     sorted_rtt = sorted([s[3] for s in client_rtt])
     
     upper_q = quantile(sorted_rtt, 75)
@@ -72,84 +69,108 @@ def clock_diff(timestamp_server, timestamp_client):
     # diff < 0: client is ahead of server by abs(diff) seconds
     return diff
 
-# client
-if sys.argv[1] == '-c':
-    
-    now = dt.datetime.today()
-    date = [str(x) for x in [now.year, now.month, now.day]]
-    date = [x.zfill(2) for x in date]
-    date = '-'.join(date)
-    
-    if not os.path.isdir(dirpath):
-        os.makedirs(dirpath)
-    
-    server_addr = (HOST, PORT)
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.settimeout(3)
-    num_packet_per_round = 10
-    packet_interval = 0
 
-    timestamp_client = []
-    timestamp_server = []
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--client", action="store_true", help="client mode")
+    parser.add_argument("-s", "--server", action="store_true", help="server mode")
+    parser.add_argument("-H", "--host", type=str, help="host: e.g., 140.112.xx.xxx", default="140.112.20.183")
+    parser.add_argument("-p", "--port", type=int, help="port", default=3298)
+    args = parser.parse_args()
+    
+    HOST = args.host
+    PORT = args.port
 
-    i = 0
-    ctmo_cnt = 0
-    while i <= num_packet_per_round:
-        time0 = time.time()
-        outdata = str(i).zfill(3)
-        s.sendto(outdata.encode(), server_addr)
+    # client
+    if args.client is not None:
+        with open('../savedir.txt', 'r', encoding='utf-8') as f:
+            savedir = f.readline().strip()
+        
+        with open('../device.txt', 'r', encoding='utf-8') as f:
+            device = f.readline().strip()
+        
+        now = dt.datetime.today()
+        date = [str(x) for x in [now.year, now.month, now.day]]
+        date = [x.zfill(2) for x in date]
+        date = '-'.join(date)
+        
+        dirpath = f'{savedir}/{date}/sync'
+        if not os.path.isdir(dirpath):
+            print(f"makedir: {dirpath}")
+            os.makedirs(dirpath)
+        
+        server_addr = (HOST, PORT)
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(3)
-        try:
-            indata, addr = s.recvfrom(1024)
-            time1 = time.time()
-            indata = indata.decode()
-            ctmo_cnt = 0
-        except:
-            print("timeout", outdata)
-            ctmo_cnt += 1
-            if ctmo_cnt == 3:
-                break
-            continue
-        print(outdata, time0, time1, "RTT =", (time1-time0)*1000, "ms")
-        timestamp_client.append([outdata, time0, time1])
-        timestamp_server.append(indata.split(' '))
-        time.sleep(packet_interval)
-        i += 1
-    outdata = 'end'
-    s.sendto(outdata.encode(), server_addr)
-    
-    current_time = dt.datetime.now()
-    diff = clock_diff(timestamp_server, timestamp_client)
-    print(current_time, diff, "seconds")
-    
-    json_file = os.path.join(dirpath, f'time_sync_{date}.json')
-    if os.path.isfile(json_file):
-        with open(json_file, 'r') as f:
-            json_object = json.load(f)
-    else:
-        json_object = {}
-    json_object[str(current_time)] = diff
-    with open(json_file, 'w') as f:
-        json.dump(json_object, f)
+        num_packet_per_round = 10
+        packet_interval = 0
 
-# server
-elif sys.argv[1] == '-s':
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(('0.0.0.0', PORT))
+        timestamp_client = []
+        timestamp_server = []
 
-    while True:
-        print('server start at: %s:%s' % ('0.0.0.0', PORT))
-        print('wait for connection...')
+        i = 0
+        ctmo_cnt = 0
+        while i <= num_packet_per_round:
+            time0 = time.time()
+            outdata = str(i).zfill(3)
+            s.sendto(outdata.encode(), server_addr)
+            s.settimeout(3)
+            try:
+                indata, addr = s.recvfrom(1024)
+                time1 = time.time()
+                indata = indata.decode()
+                ctmo_cnt = 0
+            except:
+                print("timeout", outdata)
+                ctmo_cnt += 1
+                if ctmo_cnt == 3:
+                    break
+                continue
+            print(outdata, time0, time1, "RTT =", (time1-time0)*1000, "ms")
+            timestamp_client.append([outdata, time0, time1])
+            timestamp_server.append(indata.split(' '))
+            time.sleep(packet_interval)
+            i += 1
+        outdata = 'end'
+        s.sendto(outdata.encode(), server_addr)
+        
+        current_time = dt.datetime.now()
+        diff = clock_diff(timestamp_server, timestamp_client)
+        print("device:", device)
+        print(current_time, diff, "seconds")
+        
+        json_file = os.path.join(dirpath, f'time_sync_{device}.json')
+        if os.path.isfile(json_file):
+            with open(json_file, 'r') as f:
+                json_object = json.load(f)
+        else:
+            json_object = {}
+        json_object[str(current_time)] = diff
+        with open(json_file, 'w') as f:
+            json.dump(json_object, f)
+
+    # server
+    elif args.server is not None:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.bind(('0.0.0.0', PORT))
 
         while True:
-            indata, addr = s.recvfrom(1024)
-            time0 = time.time()
-            indata = indata.decode()
-            if indata == 'end':
-                break
-            print('recvfrom ' + str(addr) + ': ' + indata)
-            
-            time1 = time.time()
-            outdata = f'{indata} {time0} {time1}'
-            s.sendto(outdata.encode(), addr)
-            print(indata, time0, time1)
+            print('server start at: %s:%s' % ('0.0.0.0', PORT))
+            print('wait for connection...')
+
+            while True:
+                indata, addr = s.recvfrom(1024)
+                time0 = time.time()
+                indata = indata.decode()
+                if indata == 'end':
+                    break
+                print('recvfrom ' + str(addr) + ': ' + indata)
+                
+                time1 = time.time()
+                outdata = f'{indata} {time0} {time1}'
+                s.sendto(outdata.encode(), addr)
+                print(indata, time0, time1)
+    
+    # neither client nor server
+    else:
+        print('You need to specify client/server mode.')
