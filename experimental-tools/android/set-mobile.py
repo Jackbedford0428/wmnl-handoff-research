@@ -8,13 +8,24 @@
 from adbutils import adb
 import argparse
 import sys
-from device_to_serial import device_to_serial, serial_to_device
+import json
+
+
+with open('../device_to_serial.json', 'r') as f:
+    json_data = json.load(f)
+    device_to_serial = json_data["device_to_serial"]
+    serial_to_device = json_data["serial_to_device"]
+    
+with open('../password.txt', 'r', encoding='utf-8') as f:
+    password = f.readline().strip()
+    
+with open('../savedir.txt', 'r', encoding='utf-8') as f:
+    savedir = f.readline().strip()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--device", type=str,
                     help="device name (allows only 1 device)", required=True)
 args = parser.parse_args()
-
 
 
 if adb.list()[0].state != "unauthorized":
