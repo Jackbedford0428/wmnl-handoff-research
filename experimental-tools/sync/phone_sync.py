@@ -3,6 +3,7 @@ import subprocess
 import argparse
 import time
 import json
+from tqdm import tqdm
 
 
 if __name__ == "__main__":
@@ -47,6 +48,8 @@ if __name__ == "__main__":
             adb_cmd = f"su -c '{su_cmd}'"
             subprocess.Popen([f'adb -s {serial} shell "{adb_cmd}"'], shell=True)
         
-        time.sleep(count_down)
-        for i in range(10, 0, -1):
-            print(i); time.sleep(1)
+        for i in tqdm(range(args.period)):
+            time.sleep(1)
+        # time.sleep(count_down)
+        # for i in range(10, 0, -1):
+        #     print(i); time.sleep(1)
