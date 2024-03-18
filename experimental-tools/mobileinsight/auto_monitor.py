@@ -4,41 +4,39 @@
 # pip3 install adbutils
 # ./auto_monitor.py
 
-from adbutils import adb
+# from adbutils import adb
 import os
 import sys
 import time
 import subprocess
 import datetime as dt
-from device_to_serial import device_to_serial, serial_to_device
+import json
 
-# device_to_serial = dict((v, k) for k, v in serial_to_device.items())
 
-def makedir(dirpath, mode=0):  # mode=1: show message, mode=0: hide message
-    if os.path.isdir(dirpath):
-        if mode:
-            print("mkdir: cannot create directory '{}': directory has already existed.".format(dirpath))
-        return
-    ### recursively make directory
-    _temp = []
-    while not os.path.isdir(dirpath):
-        _temp.append(dirpath)
-        dirpath = os.path.dirname(dirpath)
-    while _temp:
-        dirpath = _temp.pop()
-        print("mkdir", dirpath)
-        os.mkdir(dirpath)
+with open('../device_to_serial.json', 'r') as file:
+    device_to_serial = json.load(file)
+    
+with open('../serial_to_device.json', 'r') as file:
+    serial_to_device = json.load(file)
+    
+with open('../password.txt', 'r', encoding='utf-8') as f:
+    password = f.readline().strip()
+    
+with open('../savepath.txt', 'r', encoding='utf-8') as f:
+    savepath = f.readline().strip()
 
 now = dt.datetime.today()
 date = [str(x) for x in [now.year, now.month, now.day]]
 date = [x.zfill(2) for x in date]
 date = '-'.join(date)
-makedir("./log/{}".format(date))
 
-mi2log_path = "./log/{}/{}".format(date, "mi2log")  # mobileinsight log
-makedir(mi2log_path)
+mi2log_path = f'{savepath}/{date}/mi2log'  # mobileinsight log
+if not os.path.isdir(mi2log_path):
+    print(f"makedir: {mi2log_path}")
+    os.makedirs(mi2log_path)
 
-os.system("echo wmnlab | sudo -S su")
+
+os.system(f"echo {password} | sudo -S su")
 
 ### Check Mobile
 mobile_info = []
