@@ -82,7 +82,7 @@ if __name__ == "__main__":
     PORT = args.port
 
     # client
-    if args.client is not None:
+    if args.client:
         with open('../savedir.txt', 'r', encoding='utf-8') as f:
             savedir = f.readline().strip()
         
@@ -150,7 +150,7 @@ if __name__ == "__main__":
             json.dump(json_object, f)
 
     # server
-    elif args.server is not None:
+    elif args.server:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.bind(('0.0.0.0', PORT))
 
