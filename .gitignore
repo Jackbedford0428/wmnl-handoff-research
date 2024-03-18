@@ -18,6 +18,4 @@ test.ipynb
 test.py
 
 !device_to_serial.json
-!serial_to_device.json
 !device_to_port.json
-!port_to_device.json
