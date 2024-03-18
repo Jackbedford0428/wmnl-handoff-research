@@ -112,9 +112,9 @@ if __name__ == "__main__":
                 if info[7].startswith("python3 ./auto_monitor.py"):
                     kill_list.append(info[1])
             for pid in kill_list[:-1]:
-                os.system("sudo kill -9 {}".format(pid))
+                os.system("sudo kill -2 {}".format(pid))
             os.system("sudo rm ps_temp.txt")
-            os.system("sudo kill -9 {}".format(kill_list[-1]))
+            os.system("sudo kill -2 {}".format(kill_list[-1]))
             break
         except Exception as e:
             print("error", e)
