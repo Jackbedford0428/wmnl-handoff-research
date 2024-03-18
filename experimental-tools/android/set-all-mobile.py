@@ -46,14 +46,14 @@ for device, info in zip(devices, devices_info):
     if info[2][:2] == "sm":
         device.shell("su -c 'mount -o remount,rw /system/bin'")
         for tool in tools:
-            device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools-beta/android/sm-script/termux-tools/{} /bin'".format(tool))
+            device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools/android/sm-script/termux-tools/{} /bin'".format(tool))
             device.shell("su -c 'chmod +x /bin/{}'".format(tool))
         device.shell("su -c 'cp /data/python3 /bin'")
         device.shell("su -c 'chmod +x /bin/python3'")
     elif info[2][2] == "xm":
         # device.shell("su -c 'mount -o remount,rw /system/sbin'")
         for tool in tools:
-            device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools-beta/android/xm-script/termux-tools/{} /sbin'".format(tool))
+            device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools/android/xm-script/termux-tools/{} /sbin'".format(tool))
             device.shell("su -c 'chmod +x /sbin/{}'".format(tool))
         device.shell("su -c 'cp /data/python3 /sbin'")
         device.shell("su -c 'chmod +x /sbin/python3'")
@@ -63,14 +63,14 @@ for device, info in zip(devices, devices_info):
     print("-----------------------------------")
     
     # UDP_Phone
-    su_cmd = 'rm -rf /sdcard/UDP_Phone && cp -r /sdcard/wmnl-handoff-research/experimental-tools-beta/udp-socket-programming/v3/UDP_Phone /sdcard'
+    su_cmd = 'rm -rf /sdcard/UDP_Phone && cp -r /sdcard/wmnl-handoff-research/experimental-tools/udp-socket-programming/v3/UDP_Phone /sdcard'
     adb_cmd = f"su -c '{su_cmd}'"
     device.shell(su_cmd)
     print(info[2], 'Update UDP_Phone! v3')
     print("-----------------------------------")
     
     # TCP_Phone
-    su_cmd = 'rm -rf /sdcard/TCP_Phone && cp -r /sdcard/wmnl-handoff-research/experimental-tools-beta/tcp-socket-programming/v3/TCP_Phone /sdcard'
+    su_cmd = 'rm -rf /sdcard/TCP_Phone && cp -r /sdcard/wmnl-handoff-research/experimental-tools/tcp-socket-programming/v3/TCP_Phone /sdcard'
     adb_cmd = f"su -c '{su_cmd}'"
     device.shell(su_cmd)
     print(info[2], 'Update TCP_Phone! v3')
