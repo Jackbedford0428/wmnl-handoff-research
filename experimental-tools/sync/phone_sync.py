@@ -19,8 +19,6 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", type=int, help="port", default=3298)
     parser.add_argument("-n", "--number", type=int, help="number of packet per round", default=500)
     args = parser.parse_args()
-    
-    count_down = args.period - 10
 
     devices = []
     for dev in args.devices:
@@ -50,6 +48,3 @@ if __name__ == "__main__":
         
         for i in tqdm(range(args.period)):
             time.sleep(1)
-        # time.sleep(count_down)
-        # for i in range(10, 0, -1):
-        #     print(i); time.sleep(1)
