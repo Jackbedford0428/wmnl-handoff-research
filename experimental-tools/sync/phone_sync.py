@@ -42,7 +42,7 @@ if __name__ == "__main__":
     while True:
         subprocess.Popen([f'python3 time_sync.py -c -H {args.host} -p {args.port} -n {args.number}'], shell=True)
         for device, serial in zip(devices, serials):
-            su_cmd = f'cd /sdcard/wmnl-handoff-research/experimental-tool/sync && python3 time_sync.py -c -H {args.host} -p {args.port} -n {args.number}'
+            su_cmd = f'cd /sdcard/wmnl-handoff-research/experimental-tools/sync && python3 time_sync.py -c -H {args.host} -p {args.port} -n {args.number}'
             adb_cmd = f"su -c '{su_cmd}'"
             subprocess.Popen([f'adb -s {serial} shell "{adb_cmd}"'], shell=True)
         
