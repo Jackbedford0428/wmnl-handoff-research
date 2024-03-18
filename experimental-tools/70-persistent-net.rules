@@ -1,6 +1,9 @@
+// sudo cp 70-persistent-net.rules /etc/udev/rules.d
 // SAMSUNG Galaxy A42 5G
-SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="R5CR20FDXHK", NAME="sm00"
-SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="R5CR30P9Z8Y", NAME="sm01"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6864", ATTRS{serial}=="R5CR20FDXHK", NAME="sm00"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6860", ATTRS{serial}=="R5CR20FDXHK", NAME="sm00"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6864", ATTRS{serial}=="R5CR30P9Z8Y", NAME="sm01"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6860", ATTRS{serial}=="R5CR30P9Z8Y", NAME="sm01"
 SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6864", ATTRS{serial}=="R5CRA1GCHFV", NAME="sm02"
 SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6860", ATTRS{serial}=="R5CRA1GCHFV", NAME="sm02"
 SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6864", ATTRS{serial}=="R5CRA1JYYQJ", NAME="sm03"
@@ -13,10 +16,8 @@ SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="R5CRA1ESYWM", NAME="sm06"
 SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="R5CRA1ET22M", NAME="sm07"
 SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="R5CRA1D23QK", NAME="sm08"
 SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="R5CRA2EGJ5X", NAME="sm09"
-SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6864", ATTRS{serial}=="R5CRA1ET5KB", NAME="sm10"
-SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6860", ATTRS{serial}=="R5CRA1ET5KB", NAME="sm10"
-SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6864", ATTRS{serial}=="R5CRA1D2MRJ", NAME="sm11"
-SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="04e8", ATTRS{idProduct}=="6860", ATTRS{serial}=="R5CRA1D2MRJ", NAME="sm11"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="R5CRA1ET5KB", NAME="sm10"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="R5CRA1D2MRJ", NAME="sm11"
 
 // Xiaomi 10T
 SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="73e11a9f", NAME="xm00"
