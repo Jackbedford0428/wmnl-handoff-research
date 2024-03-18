@@ -119,7 +119,7 @@ if __name__ == "__main__":
     if args.decode_file is not None:
         dumper.save_decoded_msg_as(args.decode_file)
     else:
-        dumper.save_decoded_msg_as(savepath_mi2log)
+        dumper.save_decoded_msg_as(savepath_xml)
 
     # Start the monitoring
     src.run()
