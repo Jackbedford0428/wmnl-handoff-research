@@ -178,7 +178,7 @@ n = [str(x) for x in [now.year, now.month, now.day, now.hour, now.minute, now.se
 n = [x.zfill(2) for x in n]  # zero-padding to two digit
 n = '-'.join(n[:3]) + '_' + '-'.join(n[3:])
 
-pcap_path = '/sdcard/experient_log/{}/client_pcap'.format(n[:10])
+pcap_path = '/sdcard/experiment_log/{}/client_pcap'.format(n[:10])
 if not os.path.isdir(pcap_path):
    print("makedir: {pcap_path}")
    os.makedirs(pcap_path)
