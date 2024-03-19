@@ -38,28 +38,33 @@ for i, info in enumerate(devices_info):
     print("{} - {} {} {}".format(i+1, info[0], info[1], info[2]))
 print("-----------------------------------")
 
-# tools = ["git", "iperf3m", "iperf3", "python3", "tcpdump", "tmux", "vim"]
-tools = ["git", "iperf3m", "iperf3", "tcpdump", "tmux", "vim"]
+tools = ["git", "iperf3", "python3", "tcpdump", "tmux", "vim"]
 for device, info in zip(devices, devices_info):
     print(info[2], device.shell("su -c 'cd /sdcard/wmnl-handoff-research && /data/git pull'"))
     print("-----------------------------------")
     if info[2][:2] == "sm":
         device.shell("su -c 'mount -o remount,rw /system/bin'")
         for tool in tools:
-            device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools/android/sm-script/termux-tools/{} /bin'".format(tool))
+            device.shell("su -c 'cp /data/{} /bin'".format(tool))
             device.shell("su -c 'chmod +x /bin/{}'".format(tool))
-        device.shell("su -c 'cp /data/python3 /bin'")
-        device.shell("su -c 'chmod +x /bin/python3'")
+            # device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools/android/sm-script/termux-tools/{} /bin'".format(tool))
+            # device.shell("su -c 'chmod +x /bin/{}'".format(tool))
     elif info[2][2] == "xm":
         # device.shell("su -c 'mount -o remount,rw /system/sbin'")
         for tool in tools:
-            device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools/android/xm-script/termux-tools/{} /sbin'".format(tool))
+            device.shell("su -c 'cp /data/{} /sbin'".format(tool))
             device.shell("su -c 'chmod +x /sbin/{}'".format(tool))
-        device.shell("su -c 'cp /data/python3 /sbin'")
-        device.shell("su -c 'chmod +x /sbin/python3'")
+            # device.shell("su -c 'cp /sdcard/wmnl-handoff-research/experimental-tools/android/xm-script/termux-tools/{} /sbin'".format(tool))
+            # device.shell("su -c 'chmod +x /sbin/{}'".format(tool))
     
     # test tools
-    print(info[2], 'iperf3m:', device.shell("su -c 'iperf3m --version'"))
+    print(info[2], 'git:', device.shell("su -c 'git --version'"))
+    print("-----------------------------------")
+    print(info[2], 'iperf3:', device.shell("su -c 'iperf3 --version'"))
+    print("-----------------------------------")
+    print(info[2], 'tcpdump:', device.shell("su -c 'tcpdump --version'"))
+    print("-----------------------------------")
+    print(info[2], 'python3:', device.shell("su -c 'python3 --version'"))
     print("-----------------------------------")
     
     # UDP_Phone
