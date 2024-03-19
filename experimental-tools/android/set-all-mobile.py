@@ -5,6 +5,7 @@
 # ./set-tools-mobile-all.py
 
 from adbutils import adb
+import time
 import json
 
 
@@ -80,5 +81,7 @@ for device, info in zip(devices, devices_info):
     device.shell(su_cmd)
     print(info[2], 'Update TCP_Phone! v3')
     print("-----------------------------------")
+    
+    time.sleep(1)
 
 print('---End Of File---')
