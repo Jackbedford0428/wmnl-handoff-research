@@ -18,39 +18,43 @@ def makedir(dirpath, mode=0):  # mode=1: show message, mode=0: hide message
         print("mkdir", dirpath)
         os.mkdir(dirpath)
 
-client_pcap_flag, server_pcap_flag, tsync_flag, cimon_flag = False, False, False, False
+client_pcap_flag, server_pcap_flag, tsync_flag, gps_flag = False, False, False, False
 
 # ***********************************************************************************************
 # TODO: 設定目標日期
-target_date = "2023-08-21"
+target_date = "2024-03-19"
 
 # TODO: 設定電腦根目錄的資料夾路經
 # computer_root_folder = "/Users/jackbedford/Desktop/MOXA/temp/"
-computer_root_folder = "/home/wmnlab/D/phone_temp/"
+# computer_root_folder = "/home/wmnlab/D/phone_temp/"
+computer_root_folder = "/home/wmnlab/E/phone_temp"
 
 # TODO: 設定手機和電腦的資料夾路徑
 client_pcap_flag = True
 tsync_flag = True
-cimon_flag = True
+gps_flag = True
 server_pcap_flag = True
 
 # 設定手機備份資料夾路徑
-client_pcap_phone_folder = "/sdcard/pcapdir/"
+# client_pcap_phone_folder = "/sdcard/pcapdir/"
+client_pcap_phone_folder = os.path.join("/sdcard/experiment_log", target_date, "client_pcap")
 client_pcap_computer_folder = os.path.join(computer_root_folder, target_date, "client_pcap")
 makedir(client_pcap_computer_folder)
 
-tsync_phone_folder = os.path.join("/sdcard/wmnl-handoff-research/experimental-tools-beta/sync/log/", target_date)
-tsync_computer_folder = os.path.join(computer_root_folder, target_date)
+# tsync_phone_folder = os.path.join("/sdcard/wmnl-handoff-research/experimental-tools-beta/sync/log/", target_date)
+tsync_phone_folder = os.path.join("/sdcard/experiment_log", target_date, "sync")
+tsync_computer_folder = os.path.join(computer_root_folder, target_date, "sync")
 makedir(tsync_computer_folder)
 
-cimon_phone_folder = "/sdcard/Android/data/com.example.cellinfomonitor/files/Documents/"
-cimon_computer_folder = os.path.join(computer_root_folder, target_date, "cimon")
-makedir(cimon_computer_folder)
+# gps_phone_folder = "/sdcard/Android/data/com.example.cellinfomonitor/files/Documents/"
+gps_phone_folder = "/sdcard/Android/data/com.flashlight.lite.gps.logger/files/GPSTracks"
+gps_computer_folder = os.path.join(computer_root_folder, target_date, "gps")
+makedir(gps_computer_folder)
 
-# 設定電腦的備份資料夾路徑
-server_pcap_computer_folder1 = "/home/wmnlab/temp/"
-server_pcap_computer_folder2 = os.path.join(computer_root_folder, target_date, "server_pcap")
-makedir(server_pcap_computer_folder2)
+# # 設定電腦的備份資料夾路徑
+# server_pcap_computer_folder1 = "/home/wmnlab/temp/"
+# server_pcap_computer_folder2 = os.path.join(computer_root_folder, target_date, "server_pcap")
+# makedir(server_pcap_computer_folder2)
 # ***********************************************************************************************
 
 # 執行 adb 命令取得連接的手機資訊
@@ -127,7 +131,7 @@ if client_pcap_flag:
         output = os.popen(adb_ls_command).read()
         phone_files = output.split()
 
-        pcap_files = [filename for filename in phone_files if filename.startswith("client_pcap_") and filename.endswith(".pcap")]
+        pcap_files = [filename for filename in phone_files if filename.startswith("client_pcap") and filename.endswith(".pcap")]
 
         for filename in pcap_files:
             if target_date in filename:
@@ -146,7 +150,7 @@ if tsync_flag:
         output = os.popen(adb_ls_command).read()
         phone_files = output.split()
 
-        sync_files = [filename for filename in phone_files if filename.startswith("time_sync_") and filename.endswith(".json")]
+        sync_files = [filename for filename in phone_files if filename.startswith("time_sync") and filename.endswith(".json")]
 
         for filename in sync_files:
             source_path = os.path.join(tsync_phone_folder, filename)
@@ -155,33 +159,34 @@ if tsync_flag:
             adb_command = f"adb -s {serial} pull -a {source_path} {destination_path}"
             os.system(adb_command)
 
-# 備份 server_pcap 檔案
-if server_pcap_flag:
-    print('copy server pcap...')
-    # 遍歷檔案清單，複製符合目標日期的檔案到目標資料夾
-    pcap_files = [filename for filename in os.listdir(server_pcap_computer_folder1) if filename.startswith("server_pcap_") and filename.endswith(".pcap")]
+# # 備份 server_pcap 檔案
+# if server_pcap_flag:
+#     print('copy server pcap...')
+#     # 遍歷檔案清單，複製符合目標日期的檔案到目標資料夾
+#     pcap_files = [filename for filename in os.listdir(server_pcap_computer_folder1) if filename.startswith("server_pcap_") and filename.endswith(".pcap")]
 
-    for filename in pcap_files:
-        if target_date in filename:
-            source_path = os.path.join(server_pcap_computer_folder1, filename)
-            destination_path = os.path.join(server_pcap_computer_folder2, filename)
-            shutil.copy2(source_path, destination_path)  # 複製檔案並保留 meta data
+#     for filename in pcap_files:
+#         if target_date in filename:
+#             source_path = os.path.join(server_pcap_computer_folder1, filename)
+#             destination_path = os.path.join(server_pcap_computer_folder2, filename)
+#             shutil.copy2(source_path, destination_path)  # 複製檔案並保留 meta data
 
-# 上傳 cimon 檔案
-if cimon_flag:
-    print('upload cimon...')
+# 上傳 gps 檔案
+if gps_flag:
+    print('upload gps...')
     for dev, serial in serial_numbers.items():
         # 使用 adb 命令列出手機上的檔案清單
-        adb_ls_command = f"adb -s {serial} shell ls {cimon_phone_folder}"
+        adb_ls_command = f"adb -s {serial} shell ls {gps_phone_folder}"
         output = os.popen(adb_ls_command).read()
         phone_files = output.split()
 
-        cimon_files = [filename for filename in phone_files if filename.startswith("cimon_") and filename.endswith(".csv")]
+        # gps_files = [filename for filename in phone_files if filename.startswith("gps_") and filename.endswith(".csv")]
+        gps_files = [filename for filename in phone_files if filename.startswith(target_date) and filename.endswith(".csv")]
 
-        for filename in cimon_files:
+        for filename in gps_files:
             if target_date in filename:
-                source_path = os.path.join(cimon_phone_folder, filename)
-                destination_path = os.path.join(cimon_computer_folder, "cimon_" + dev + "_" + filename[6:])
+                source_path = os.path.join(gps_phone_folder, filename)
+                destination_path = os.path.join(gps_computer_folder, "gps_" + dev + "_" + filename)
                 # 使用 adb 命令將檔案從手機上傳到電腦
                 adb_command = f"adb -s {serial} pull -a {source_path} {destination_path}"
                 os.system(adb_command)
