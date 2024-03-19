@@ -69,22 +69,6 @@ def clock_diff(timestamp_server, timestamp_client):
     # diff < 0: client is ahead of server by abs(diff) seconds
     return diff
 
-# # 定義函數：自動檢測並新增尚未存在的資料夾
-# def makedir(dirpath, mode=0):  # mode=1: show message, mode=0: hide message
-#     if os.path.isdir(dirpath):
-#         if mode:
-#             print("mkdir: cannot create directory '{}': directory has already existed.".format(dirpath))
-#         return
-#     ### recursively make directory
-#     _temp = []
-#     while not os.path.isdir(dirpath):
-#         _temp.append(dirpath)
-#         dirpath = os.path.dirname(dirpath)
-#     while _temp:
-#         dirpath = _temp.pop()
-#         print("mkdir", dirpath)
-#         os.mkdir(dirpath)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -117,8 +101,6 @@ if __name__ == "__main__":
         if not os.path.isdir(dirpath):
             print(f"makedir: {dirpath}")
             os.makedirs(dirpath)
-        # makedir(dirpath)
-        
         
         server_addr = (HOST, PORT)
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
