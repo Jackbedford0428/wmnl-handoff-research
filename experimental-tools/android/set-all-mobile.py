@@ -65,7 +65,7 @@ for device, info in zip(devices, devices_info):
     
     # test tools
     print(info[2], 'git:', device.shell("su -c 'git --version'"))
-    print(device.shell("su -c 'git branch'"))
+    print(device.shell("su -c 'cd /sdcard/wmnl-handoff-research && git branch'"))
     print("-----------------------------------")
     print(info[2], 'iperf3:', device.shell("su -c 'iperf3 --version'"))
     print("-----------------------------------")
