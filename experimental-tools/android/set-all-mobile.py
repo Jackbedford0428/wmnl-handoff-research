@@ -7,6 +7,7 @@
 from adbutils import adb
 import time
 import json
+import argparse
 
 
 with open('../device_to_serial.json', 'r') as f:
@@ -19,6 +20,10 @@ with open('../password.txt', 'r', encoding='utf-8') as f:
     
 with open('../savedir.txt', 'r', encoding='utf-8') as f:
     savedir = f.readline().strip()
+    
+parser = argparse.ArgumentParser()
+parser.add_argument("-rf", "--clear", action="store_true", help="clear data")
+args = parser.parse_args()
 
 devices_info = []
 for i, info in enumerate(adb.list()):
@@ -81,6 +86,14 @@ for device, info in zip(devices, devices_info):
     device.shell(su_cmd)
     print(info[2], 'Update TCP_Phone! v3')
     print("-----------------------------------")
+    
+    # Clear data
+    if args.clear:
+        su_cmd = 'rm -rf /sdcard/pcapdir && rm -rf /sdcard/experiment_log'
+        adb_cmd = f"su -c '{su_cmd}'"
+        device.shell(su_cmd)
+        print(info[2], 'Clear data: /sdcard/pcapdir && /sdcard/experiment_log')
+        print("-----------------------------------")
     
     time.sleep(2.5)
 
