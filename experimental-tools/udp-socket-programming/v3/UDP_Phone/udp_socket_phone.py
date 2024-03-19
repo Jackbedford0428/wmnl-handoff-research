@@ -177,9 +177,11 @@ now = dt.datetime.today()
 n = [str(x) for x in [now.year, now.month, now.day, now.hour, now.minute, now.second]]
 n = [x.zfill(2) for x in n]  # zero-padding to two digit
 n = '-'.join(n[:3]) + '_' + '-'.join(n[3:])
-pcap_path = '/sdcard/pcapdir/'
+
+pcap_path = '/sdcard/experient_log/{}'.format(n[:10])
 if not os.path.isdir(pcap_path):
-   os.system(f'mkdir {pcap_path}') 
+   print("makedir: {pcap_path}")
+   os.makedirs(pcap_path)
 
 
 pcap = os.path.join(pcap_path, f"client_pcap_BL_{dev}_{ports[0]}_{ports[1]}_{n}_sock.pcap")
