@@ -204,7 +204,12 @@ now = dt.datetime.today()
 n = [str(x) for x in [now.year, now.month, now.day, now.hour, now.minute, now.second]]
 n = [x.zfill(2) for x in n]  # zero-padding to two digit
 n = '-'.join(n[:3]) + '_' + '-'.join(n[3:])
-pcap_path = '/home/wmnlab/temp'
+# pcap_path = '/home/wmnlab/temp'
+
+pcap_path = '/home/wmnlab/Desktop/experiment_log/{}/server_pcap'.format(n[:10])
+if not os.path.isdir(pcap_path):
+   print("makedir: {pcap_path}")
+   os.makedirs(pcap_path)
 
 tcpproc_list = []
 for device, port in zip(devices, ports):
