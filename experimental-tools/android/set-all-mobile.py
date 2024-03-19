@@ -82,6 +82,6 @@ for device, info in zip(devices, devices_info):
     print(info[2], 'Update TCP_Phone! v3')
     print("-----------------------------------")
     
-    time.sleep(1)
+    time.sleep(3)
 
 print('---End Of File---')
