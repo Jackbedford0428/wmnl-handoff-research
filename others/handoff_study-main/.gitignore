@@ -1,7 +1,0 @@
-*.csv
-*.db
-*.bak
-*.pcap
-*.log
-.ipynb_checkpoints
-*.o
