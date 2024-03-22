@@ -19,3 +19,4 @@ test.py
 
 !device_to_serial.json
 !device_to_port.json
+!data encapsulation.png
