@@ -87,12 +87,12 @@
   bitrate:
     - 1
     - Mbps
-  備註:
+  備註: # 若將備註行都刪除, 備註 value 預設為 None
     - 備註1... (可刪除此行)
     - 備註2... (可刪除此行)
 
 # 參數設定
-# skip: yes/no (default: yes) 分析或處理資料時是否要`跳過`該次實驗; 若要進行前處理的話, 記得將它改成 `no`
+# skip: yes/no (default: yes) 分析或處理資料時是否要`跳過`該次實驗; 若要進行前處理的話, 記得將它改成 `no`; 讀取後會自動轉換為 True/False
 # route: R/G/O1/O2/B/BR/A/Y/V/K (default: BR)
 #   R:   淡水信義線 (紅線)
 #   G:   松山新店線 (綠線)
