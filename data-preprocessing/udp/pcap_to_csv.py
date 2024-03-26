@@ -149,14 +149,16 @@ if __name__ == "__main__":
                     fin = os.path.join(raw_dir, filename)
                     fout = os.path.join(middle_dir, filename.replace('.pcap', '.csv'))
                     print(f">>>>> {fin} -> {fout}")
-                    # *********************
+                    # **********************
                     pcap_to_csv(fin, fout)
-                    # *********************
+                    # **********************
                     t.toc(); print()
                 
                 print()
                     
             except Exception as e:
                 pop_error_message(e, locate=metadata, raise_flag=True)
+        
+        pop_error_message(signal='Finish converting pcap to csv', stdout=True)
     else:
         print(args.onefile)
