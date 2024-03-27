@@ -27,9 +27,7 @@ Update: Yuan-Jye Chen 2022-10-09
 """
 
 """
-    Future Development Plan
-        (1) Neglect filename start with ".~lock". (e.g., ".~lock.packet_info.csv#", ".~lock.client_pcap_BL_sm05_3210_3211_2022-09-29_16-24-57.csv#")
-            => solved by not str.startswith()
+    Future Development Plans:
     
 """
 import os
