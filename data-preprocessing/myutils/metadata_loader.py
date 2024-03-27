@@ -15,8 +15,6 @@ __all__ = [
     "metadata_loader",
 ]
 
-HASH_SEED = time.time()
-
 def generate_hex_string(seed, length=16):
     # 設定亂數種子
     random.seed(seed)
@@ -29,9 +27,12 @@ def generate_hex_string(seed, length=16):
 def query_datetime():
     return time.strftime('%Y-%m-%d-%H:%M:%S')
 
+HASH_SEED = time.time()
+LOGFILE = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
+
 def pop_error_message(error_message=None, locate='.', signal=None, logfile=None, stdout=False, raise_flag=False):
     if logfile is None:
-        logfile = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
+        logfile = LOGFILE
     
     file_exists = os.path.isfile(logfile)
 

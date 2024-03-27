@@ -48,6 +48,7 @@ args = parser.parse_args()
 
 # ===================== Utils =====================
 HASH_SEED = time.time()
+LOGFILE = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
 
 def makedir(dirpath):
     if not os.path.isdir(dirpath):
@@ -56,7 +57,7 @@ def makedir(dirpath):
 
 def pop_error_message(error_message=None, locate='.', signal=None, logfile=None, stdout=False, raise_flag=False):
     if logfile is None:
-        logfile = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
+        logfile = LOGFILE
     
     file_exists = os.path.isfile(logfile)
 
