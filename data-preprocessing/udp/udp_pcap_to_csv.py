@@ -6,8 +6,8 @@ Convert udp pcap into csv format and extract the features needed.
 
 Usages:
 (1) Decode only one file. 
-$ python3 pcap_to_csv.py [-i <input filepath>]
-$ python3 pcap_to_csv.py -i data/client_pcap_BL_sm03_3206_3207_2024-03-19_19-55-46_sock.pcap
+$ python3 udp_pcap_to_csv.py [-i <input filepath>]
+$ python3 udp_pcap_to_csv.py -i data/client_pcap_BL_sm03_3206_3207_2024-03-19_19-55-46_sock.pcap
 
 (2) Decode files a batch of files on specific dates.
 $ python3 udp_pcap_to_csv.py [-d <date>[ date2 date3 ...]]
@@ -35,7 +35,7 @@ sys.path.insert(1, parent_dir)
 from myutils import *
 
 __all__ = [
-    'pcap_to_csv'
+    "pcap_to_csv",
 ]
 
 
