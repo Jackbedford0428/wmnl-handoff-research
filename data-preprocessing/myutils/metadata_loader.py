@@ -9,11 +9,17 @@ import random
 import time
 
 __all__ = [
+    "makedir",
     "generate_hex_string",
     "query_datetime",
     # "pop_error_message",
     "metadata_loader",
 ]
+
+def makedir(dirpath):
+    if not os.path.isdir(dirpath):
+        print('makedir:', dirpath)
+        os.makedirs(dirpath)
 
 def generate_hex_string(seed, length=16):
     # 設定亂數種子

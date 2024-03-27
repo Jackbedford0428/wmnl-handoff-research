@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
+# Filename: tcp_pcap_to_csv.py
 """
 Convert udp pcap into csv format and extract the features needed.
 
@@ -18,8 +18,9 @@ Update: Yuan-Jye Chen 2024-03-27
 """
 
 """
-    Future Development Plans
-    
+    Future Development Plans:
+        (1) Adding function of onefile parsing.
+        
 """
 import os
 import sys
@@ -49,11 +50,6 @@ args = parser.parse_args()
 # ===================== Utils =====================
 HASH_SEED = time.time()
 LOGFILE = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
-
-def makedir(dirpath):
-    if not os.path.isdir(dirpath):
-        print('makedir:', dirpath)
-        os.makedirs(dirpath)
 
 def pop_error_message(error_message=None, locate='.', signal=None, logfile=None, stdout=False, raise_flag=False):
     if logfile is None:
