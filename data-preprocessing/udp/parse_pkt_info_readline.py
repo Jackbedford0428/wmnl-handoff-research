@@ -1,6 +1,6 @@
-#!/usr/bin/python3
-### Filename: udp_analysis.py
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Filename: parse_pkt_info_readline.py
 """
 Analyze packet capture of udp experiments.
 Need to convert .pcap into .csv by tshark with script udp_pcap_to_csv.py
@@ -26,26 +26,6 @@ Update: Yuan-Jye Chen 2022/10/09
         (8) readline of csv 逐行（不要一次 handle 整個 dataframe，因為 payload 太長，RAM 會爆掉），目前先把 rxdf, txdf 分別處理，不要兩個都讀進來才處理（30min-500pps-pcap.csv 還夠用）
     
 """
-# import os
-# import sys
-# import argparse
-# import csv
-# import pandas as pd
-# import datetime as dt
-# import numpy as np
-# from pprint import pprint
-# from tqdm import tqdm
-# from pytictoc import TicToc
-# import traceback
-# from statistics import median
-# from statistics import mean
-# from statistics import mode
-# from statistics import stdev
-# from scipy import stats
-# from scipy import signal
-# import portion as P
-# import swifter
-
 import os
 import sys
 import argparse
@@ -208,9 +188,10 @@ if __name__ == "__main__":
         else:
             raise TypeError("Please specify the date you want to process.")
         
-        metadatas = metadata_loader(dates)
-        
         print('\n================================ Start Processing ================================')
+        
+        metadatas = metadata_loader(dates)
+        pop_error_message()
         pop_error_message(signal='Parsing packet info into brief format', stdout=True)
         
         for metadata in metadatas:
@@ -219,10 +200,8 @@ if __name__ == "__main__":
                 print('--------------------------------------------------------')
                 middle_dir = os.path.join(metadata[0], 'middle')
                 filenames = [s for s in os.listdir(middle_dir) if s.endswith('.csv')]
-                # data_dir = os.path.join(metadata[0], 'data')
-                # makedir(data_dir)
                 
-                # **********************
+                # ******************************************************************
                 t = TicToc(); t.tic()
                 print('Server | Downlink')
                 try: filename = [s for s in filenames if s.startswith(('server_pcap_BL', 'server_pcap_DL'))][0]
@@ -266,34 +245,53 @@ if __name__ == "__main__":
                     print(f">>>>> {fin} -> {fout}")
                     parse_pkt_info(fin, fout, "client", "ul", "udp", locate=str(metadata)+'\nClient | Uplink')
                 t.toc(); print()
-                # **********************
+                # ******************************************************************
+                print()
+                    
+            except Exception as e:
+                pop_error_message(e, locate=metadata, raise_flag=True)
+                
+        pop_error_message(signal='Finish parsing packet info', stdout=True)
+        pop_error_message(signal='Aligning data on the same device within one trip', stdout=True)
+        
+        for metadata in metadatas:
+            try:
+                print(metadata)
+                print('--------------------------------------------------------')
+                middle_dir = os.path.join(metadata[0], 'middle')
                 
                 csvfiles = ["udp_dnlk_server_pkt_brief.csv", "udp_dnlk_client_pkt_brief.csv", "udp_uplk_server_pkt_brief.csv", "udp_uplk_client_pkt_brief.csv"]
                 csvfiles = [os.path.join(middle_dir, s) for s in csvfiles]
                 csvfiles = [s for s in csvfiles if os.path.isfile(s)]
                 
-                st_t = []
-                ed_t = []
+                st_seq = []
+                ed_seq = []
                 for file in csvfiles:
-                    df = pd.read_csv(file, parse_dates=['frame_time'])
-                    st_t.append(df.iloc[0]['frame_time'] - pd.Timedelta(seconds=5))
-                    ed_t.append(df.iloc[-1]['frame_time'] + pd.Timedelta(seconds=5))
+                    print(file)
+                    df = pd.read_csv(file)
+                    df = str_to_datetime_batch(df, parse_dates=['frame_time'])
+                    # 去頭 0 秒
+                    try: st_seq.append(df[df['frame_time'] >= df.iloc[0]['frame_time'] + pd.Timedelta(seconds=0)].reset_index(drop=True).iloc[0]['seq'])
+                    except: st_seq.append(1)
+                    # 截尾 5 秒
+                    try: ed_seq.append(df[df['frame_time'] < df.iloc[-1]['frame_time'] - pd.Timedelta(seconds=5)].reset_index(drop=True).iloc[-1]['seq'])
+                    except: ed_seq.append(1)
                     del df
 
-                st_t = max(st_t)
-                ed_t = min(ed_t)
+                st_seq = max(st_seq)
+                ed_seq = min(ed_seq)
                 for file in csvfiles:
-                    df = pd.read_csv(file, parse_dates=['frame_time'])
-                    df = df[(df['frame_time'] > st_t) & (df['frame_time'] < ed_t)]
+                    df = pd.read_csv(file)
+                    df = df[(df['seq'] >= st_seq) & (df['seq'] < ed_seq)]
                     df.to_csv(file, index=False)
                     del df
-                
-                print()
                     
-            except Exception as e:
-                pop_error_message(e, locate=metadata)
+                print()
                 
-        pop_error_message(signal='Finish parsing packet info', stdout=True)
+            except Exception as e:
+                pop_error_message(e, locate=metadata, raise_flag=True)
+                
+        pop_error_message(signal='Finish aligning data', stdout=True)
         
     else:
         print(args.onefile)

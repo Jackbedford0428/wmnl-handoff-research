@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import datetime as dt
+from typing import List
+from packaging import version
 
 __all__ = [
     "datetime_to_str",
     "str_to_datetime",
+    "str_to_datetime_batch",
     "epoch_to_datetime",
     "datetime_to_epoch",
 ]
@@ -27,6 +30,13 @@ def str_to_datetime(timestamp_str, format='pd'):
                 return dt.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
             except:
                 return dt.datetime.strptime(timestamp_str, "%Y-%m-%d")
+
+def str_to_datetime_batch(df, parse_dates: List[str]):
+    if version.parse(pd.__version__) >= version.parse("2.0.0"):
+        df[parse_dates] = pd.to_datetime(df[parse_dates].stack(), format='mixed').unstack()
+    else:
+        df[parse_dates] = pd.to_datetime(df[parse_dates].stack()).unstack()
+    return df
 
 def epoch_to_datetime(timestamp_epoch, format='pd', utc=8):
     if format == 'pd':

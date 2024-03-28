@@ -800,13 +800,13 @@ if __name__ == "__main__":
                     filenames = [s for s in os.listdir(middle_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
                 
                 fin = os.path.join(raw_dir, filenames[0])
-                # **********************
+                # ******************************************************************
                 t = TicToc(); t.tic()
                 fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
                 print(f">>>>> {fin} -> {fout}")
                 xml_to_csv_rrc(fin, fout)
                 t.toc(); print()
-                # **********************
+                # ******************************************************************
                 
                 print()
                     

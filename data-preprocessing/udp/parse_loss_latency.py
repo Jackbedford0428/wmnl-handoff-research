@@ -1,161 +1,99 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Filename: parse_loss_latency.py
 import os
 import sys
 import argparse
+import time
+import traceback
+from pytictoc import TicToc
+from pprint import pprint
+from tqdm import tqdm
 import csv
 import json
 import pandas as pd
 import datetime as dt
 import numpy as np
-from pprint import pprint
-from tqdm import tqdm
-from pytictoc import TicToc
-import traceback
+import portion as P
 from statistics import median
 from statistics import mean
 from statistics import mode
 from statistics import stdev
 from scipy import stats
 from scipy import signal
-import portion as P
-import math
-import random
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(1, parent_dir)
+
+from myutils import *
 
 __all__ = [
     'get_loss',
     'consolidate',
     'compensate',
     'get_latency',
-    'get_statistics'
+    'get_statistics',
 ]
 
-# ******************************* User Settings *******************************
-database = "/home/wmnlab/D/database/"
-# database = "/Users/jackbedford/Desktop/MOXA/Code/data/"
-# json_file = "/Users/jackbedford/Desktop/MOXA/Code/data/2023-03-16/time_sync_lpt3.json"
-dates = ["2023-03-26"]
-json_files = ["time_sync_lpt3.json"]
-json_files = [os.path.join(database, date, json_file) for date, json_file in zip(dates, json_files)]
-devices = sorted([
-    # "sm00",
-    # "sm01",
-    # "sm02",
-    # "sm03",
-    # "sm04",
-    # "sm05",
-    # "sm06",
-    # "sm07",
-    # "sm08",
-    "qc00",
-    # "qc01",
-    "qc02",
-    "qc03",
-])
-exps = {  # experiment_name: (number_of_experiment_rounds, list_of_experiment_round)
-            # If the list is None, it will not list as directories.
-            # If the list is empty, it will list all directories in the current directory by default.
-            # If the number of experiment times != the length of existing directories of list, it would trigger warning and skip the directory.
-    # "_Bandlock_Udp_B1_B3_B7_B8_RM500Q": (12, ["#{:02d}".format(i+1) for i in range(12)]),
-    # "_Bandlock_Udp_B1_B3_B7_B8_RM500Q": (6, []),
-    # "_Bandlock_Udp_B1_B3_B7_B8_RM500Q": (1, ['#01']),
-    # "_Bandlock_Udp_B1_B3_B7_B8_RM500Q": (5, ["#{:02d}".format(i+1) for i in range(1, 6)]),
-    "_Bandlock_Udp_B3_B7_B8_RM500Q": (6, []),
-    "_Bandlock_Udp_All_RM500Q": (4, []),
-}
 
-class Payload:
+# ===================== Arguments =====================
+parser = argparse.ArgumentParser()
+parser.add_argument("-i", "--onefile", type=str, help="input filepath")
+parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
+args = parser.parse_args()
+
+class Payl:
     LENGTH = 250              # (Bytes)
     TAG = "000425d401df5e76"  # 2 71828 3 1415926 (hex)            : 8-bytes
     OFS_TIME = (16, 24)       # epoch time of 'yyyy/mm/dd hh:mm:ss': 4-bytes
     OFS_USEC = (24, 32)       # microsecond (usec)                 : 4-bytes
     OFS_SEQN = (32, 40)       # sequence number (start from 1)     : 4-bytes
-class ServerIP:
-    PUBLIC = "140.112.20.183"  # 2F    
-    PRIVATE = "192.168.1.251"  # 2F
-    # PRIVATE = "192.168.1.248"  # 2F previous
-    # PUBLIC = "140.112.17.209"  # 3F
-    # PRIVATE = "192.168.1.108"  # 3F
+
+XMIT = 4; RECV = 0
+UDP = 17; TCP = 6
 
 DATA_RATE = 1000e3  # bits-per-second
-PKT_RATE = DATA_RATE / Payload.LENGTH / 8  # packets-per-second
+PKT_RATE = DATA_RATE / Payl.LENGTH / 8  # packets-per-second
 print("packet_rate (pps):", PKT_RATE, "\n")
-# *****************************************************************************
 
-# --------------------- Util Functions ---------------------
-def makedir(dirpath, mode=0):  # mode=1: show message, mode=0: hide message
-    if os.path.isdir(dirpath):
-        if mode:
-            print("mkdir: cannot create directory '{}': directory has already existed.".format(dirpath))
-        return
-    ### recursively make directory
-    _temp = []
-    while not os.path.isdir(dirpath):
-        _temp.append(dirpath)
-        dirpath = os.path.dirname(dirpath)
-    while _temp:
-        dirpath = _temp.pop()
-        print("mkdir", dirpath)
-        os.mkdir(dirpath)
 
-def error_handling(err_handle):
-    """
-    Print the error messages during the process.
+# ===================== Utils =====================
+HASH_SEED = time.time()
+LOGFILE = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
+
+def pop_error_message(error_message=None, locate='.', signal=None, logfile=None, stdout=False, raise_flag=False):
+    if logfile is None:
+        logfile = LOGFILE
     
-    Args:
-        err_handle (str-tuple): (input_filename, output_filename, error_messages : traceback.format_exc())
-    Returns:
-        (bool): check if the error_messages occurs, i.e., whether it is None.
-    """
-    if err_handle[2]:
-        print()
-        print("**************************************************")
-        print("File decoding from '{}' into '{}' was interrupted.".format(err_handle[0], err_handle[1]))
-        print()
-        print(err_handle[2])
-        return True
-    return False
+    file_exists = os.path.isfile(logfile)
 
-def to_utc8(ts):
-    """
-    Convert an epoch time into a readable format.
-    Switch from utc-0 into utc-8.
+    with open(logfile, "a") as f:
+        if not file_exists:
+            f.write(''.join([os.path.abspath(__file__), '\n']))
+            f.write(''.join(['Start Logging: ', time.strftime('%Y-%m-%d %H:%M:%S'), '\n']))
+            f.write('--------------------------------------------------------\n')
+        
+        if signal is None:
+            f.write(time.strftime('%Y-%m-%d %H:%M:%S') + "\n")
+            f.write(str(locate) + "\n")
+            f.write(traceback.format_exc())
+            f.write('--------------------------------------------------------\n')
+        else:
+            f.write(''.join([f'{signal}: ', time.strftime('%Y-%m-%d %H:%M:%S'), '\n']))
+            f.write('--------------------------------------------------------\n')
     
-    Args:
-        ts (float): timestamp composed of datetimedec + microsecond (e.g., 1644051509.989306)
-    Returns:
-        (datetime.datetime): a readable timestamp (utc-8)
-    """
-    return (dt.datetime.utcfromtimestamp(ts) + dt.timedelta(hours=8))
+    if raise_flag: raise
+    
+    if stdout:
+        if signal is None:
+            sys.stderr.write(traceback.format_exc())
+            print('--------------------------------------------------------')
+        else:
+            print(signal)
+            print('--------------------------------------------------------')
 
-def str_to_datetime(ts):
-    """
-    Convert a timestamp string in microseconds or milliseconds into datetime.datetime
 
-    Args:
-        ts (str): timestamp string (e.g., 2022-09-29 16:24:58.252615)
-    Returns:
-        (datetime.datetime)
-    """
-    try:
-        ts_datetime = dt.datetime.strptime(ts, '%Y-%m-%d %H:%M:%S.%f')
-    except:
-        ts_datetime = dt.datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
-    return ts_datetime
-
-def datetime_to_str(ts):
-    """
-    Convert a datetime timestamp in microseconds into str
-
-    Args:
-        ts (datetime.datetime): datetime timestamp (e.g., datetime.datetime(2022, 9, 29, 16, 24, 58, 252615))
-    Returns:
-        (str): timestamp string (e.g., 2022-09-29 16:24:58.252615)
-    """
-    try:
-        ts_string = dt.datetime.strftime(ts, '%Y-%m-%d %H:%M:%S.%f')
-    except:
-        ts_string = dt.datetime.strftime(ts, '%Y-%m-%d %H:%M:%S')
-    return ts_string
-
+# ===================== Features =====================
 def get_loss(rxdf, txdf):
     rxdf['frame_time'] = pd.to_datetime(rxdf['frame_time'])  # arrival.time
     rxdf['pyl_time'] = pd.to_datetime(rxdf['pyl_time'])  # payload.time
@@ -183,7 +121,7 @@ def get_loss(rxdf, txdf):
             loss_linspace = loss_linspace[1:-1]  # 去頭去尾
             for item in loss_linspace:
                 count += 1
-                loss_time = [round(item[0]), to_utc8(item[1]), item[1]]  # (expected) arrival timestamp
+                loss_time = [round(item[0]), epoch_to_datetime(item[1]), item[1]]  # (expected) arrival timestamp
                 loss_timestamp_list.append(loss_time)
         # Update information
         timestamp_store = timestamp
@@ -402,6 +340,123 @@ def get_statistics(df, fout1, fout2, fout3):
     print("experiment_time(sec):", exp_time, "seconds")
     print("------------------------------------------")
     print()
+
+
+# ===================== Main Process =====================
+if __name__ == "__main__":
+    if args.onefile is None:
+        
+        if args.dates is not None:
+            dates = sorted(args.dates)
+        else:
+            raise TypeError("Please specify the date you want to process.")
+        
+        print('\n================================ Start Processing ================================')
+        
+        metadatas = metadata_loader(dates)
+        # pop_error_message()
+        # pop_error_message(signal='Parsing packet info into brief format', stdout=True)
+        
+        # for metadata in metadatas:
+        #     try:
+        #         print(metadata)
+        #         print('--------------------------------------------------------')
+        #         middle_dir = os.path.join(metadata[0], 'middle')
+        #         filenames = [s for s in os.listdir(middle_dir) if s.endswith('.csv')]
+                
+        #         # **********************
+        #         t = TicToc(); t.tic()
+        #         print('Server | Downlink')
+        #         try: filename = [s for s in filenames if s.startswith(('server_pcap_BL', 'server_pcap_DL'))][0]
+        #         except: filename = None
+        #         if filename is not None:
+        #             fin = os.path.join(middle_dir, filename)
+        #             fout = os.path.join(middle_dir, "udp_dnlk_server_pkt_brief.csv")
+        #             print(f">>>>> {fin} -> {fout}")
+        #             parse_pkt_info(fin, fout, "server", "dl", "udp", locate=str(metadata)+'\nServer | Downlink')
+        #         t.toc(); print()
+                
+        #         t = TicToc(); t.tic()
+        #         print('Client | Downlink')
+        #         try: filename = [s for s in filenames if s.startswith(('client_pcap_BL', 'client_pcap_DL'))][0]
+        #         except: filename = None
+        #         if filename is not None:
+        #             fin = os.path.join(middle_dir, filename)
+        #             fout = os.path.join(middle_dir, "udp_dnlk_client_pkt_brief.csv")
+        #             print(f">>>>> {fin} -> {fout}")
+        #             parse_pkt_info(fin, fout, "client", "dl", "udp", locate=str(metadata)+'\nClient | Downlink')
+        #         t.toc(); print()
+                
+        #         t = TicToc(); t.tic()
+        #         print('Server | Uplink')
+        #         try: filename = [s for s in filenames if s.startswith(('server_pcap_BL', 'server_pcap_UL'))][0]
+        #         except: filename = None
+        #         if filename is not None:
+        #             fin = os.path.join(middle_dir, filename)
+        #             fout = os.path.join(middle_dir, "udp_uplk_server_pkt_brief.csv")
+        #             print(f">>>>> {fin} -> {fout}")
+        #             parse_pkt_info(fin, fout, "server", "ul", "udp", locate=str(metadata)+'\nServer | Uplink')
+        #         t.toc(); print()
+                
+        #         t = TicToc(); t.tic()
+        #         print('Client | Uplink')
+        #         try: filename = [s for s in filenames if s.startswith(('client_pcap_BL', 'client_pcap_UL'))][0]
+        #         except: filename = None
+        #         if filename is not None:
+        #             fin = os.path.join(middle_dir, filename)
+        #             fout = os.path.join(middle_dir, "udp_uplk_client_pkt_brief.csv")
+        #             print(f">>>>> {fin} -> {fout}")
+        #             parse_pkt_info(fin, fout, "client", "ul", "udp", locate=str(metadata)+'\nClient | Uplink')
+        #         t.toc(); print()
+        #         # **********************
+        #         print()
+                    
+        #     except Exception as e:
+        #         pop_error_message(e, locate=metadata, raise_flag=True)
+                
+        # pop_error_message(signal='Finish parsing packet info', stdout=True)
+        pop_error_message(signal='Aligning data on the same device within one trip', stdout=True)
+        
+        for metadata in metadatas:
+            try:
+                print(metadata)
+                print('--------------------------------------------------------')
+                middle_dir = os.path.join(metadata[0], 'middle')
+                
+                csvfiles = ["udp_dnlk_server_pkt_brief.csv", "udp_dnlk_client_pkt_brief.csv", "udp_uplk_server_pkt_brief.csv", "udp_uplk_client_pkt_brief.csv"]
+                csvfiles = [os.path.join(middle_dir, s) for s in csvfiles]
+                csvfiles = [s for s in csvfiles if os.path.isfile(s)]
+                
+                st_t = []
+                ed_t = []
+                for file in csvfiles:
+                    print(file)
+                    df = pd.read_csv(file)
+                    df = str_to_datetime_batch(df, parse_dates=['frame_time'])
+                    st_t.append(df.iloc[0]['frame_time'] - pd.Timedelta(seconds=5))
+                    ed_t.append(df.iloc[-1]['frame_time'] + pd.Timedelta(seconds=5))
+                    del df
+
+                # st_t = max(st_t)
+                # ed_t = min(ed_t)
+                # for file in csvfiles:
+                #     df = pd.read_csv(file)
+                #     df = str_to_datetime_batch(df, parse_dates=['frame_time'])
+                #     df = df[(df['frame_time'] > st_t) & (df['frame_time'] < ed_t)]
+                #     df.to_csv(file, index=False)
+                #     del df
+                    
+                print()
+                
+            except Exception as e:
+                pop_error_message(e, locate=metadata, raise_flag=True)
+                
+        pop_error_message(signal='Finish aligning data', stdout=True)
+        
+    else:
+        print(args.onefile)
+
+
 
 
 # dl_txdf = pd.read_csv("/home/wmnlab/D/database/2023-02-04#2/_Bandlock_Udp_all_RM500Q/qc01/#01/middle/udp_dnlk_server_pkt_brief.csv")

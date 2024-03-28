@@ -147,9 +147,9 @@ if __name__ == "__main__":
                     fin = os.path.join(raw_dir, filename)
                     fout = os.path.join(middle_dir, filename.replace('.pcap', '.csv'))
                     print(f">>>>> {fin} -> {fout}")
-                    # **********************
+                    # ******************************************************************
                     pcap_to_csv(fin, fout)
-                    # **********************
+                    # ******************************************************************
                     t.toc(); print()
                 
                 print()
