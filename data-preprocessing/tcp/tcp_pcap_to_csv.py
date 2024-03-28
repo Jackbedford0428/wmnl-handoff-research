@@ -142,10 +142,10 @@ if __name__ == "__main__":
                 print(metadata)
                 print('--------------------------------------------------------')
                 raw_dir = os.path.join(metadata[0], 'raw')
-                filenames = [s for s in os.listdir(raw_dir) if s.startswith(('server_pcap', 'client_pcap')) and s.endswith('.pcap')]
                 middle_dir = os.path.join(metadata[0], 'middle')
                 makedir(middle_dir)
                 
+                filenames = [s for s in os.listdir(raw_dir) if s.startswith(('server_pcap', 'client_pcap')) and s.endswith('.pcap')]
                 for j, filename in enumerate(filenames):
                     t = TicToc(); t.tic()
                     fin = os.path.join(raw_dir, filename)

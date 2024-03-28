@@ -197,33 +197,37 @@ if __name__ == "__main__":
         metadatas = metadata_loader(dates)
         
         print('\n================================ Start Processing ================================')
-        pop_error_message(signal='Converting mi2log_xml to nr_ml1.csv', stdout=True)
+        pop_error_message(signal='Converting mi2log_xml to ml1.csv', stdout=True)
         
         for metadata in metadatas:
             try:
                 print(metadata)
                 print('--------------------------------------------------------')
                 raw_dir = os.path.join(metadata[0], 'raw')
-                filenames = [s for s in os.listdir(raw_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
+                middle_dir = os.path.join(metadata[0], 'middle')
                 data_dir = os.path.join(metadata[0], 'data')
                 makedir(data_dir)
                 
-                for j, filename in enumerate(filenames):
-                    t = TicToc(); t.tic()
-                    fin = os.path.join(raw_dir, filename)
-                    fout = os.path.join(data_dir, filename.replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
-                    print(f">>>>> {fin} -> {fout}")
-                    # **********************
-                    xml_to_csv_ml1(fin, fout)
-                    # **********************
-                    t.toc(); print()
+                try:
+                    filenames = [s for s in os.listdir(raw_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
+                except:
+                    filenames = [s for s in os.listdir(middle_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
+                
+                fin = os.path.join(raw_dir, filenames[0])
+                # **********************
+                t = TicToc(); t.tic()
+                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_ml1.csv').replace('.txt', '_ml1.csv'))
+                print(f">>>>> {fin} -> {fout}")
+                xml_to_csv_ml1(fin, fout)
+                t.toc(); print()
+                # **********************
                 
                 print()
                     
             except Exception as e:
                 pop_error_message(e, locate=metadata, raise_flag=True)
                 
-        pop_error_message(signal='Finish converting mi2log_xml to nr_ml1.csv', stdout=True)
+        pop_error_message(signal='Finish converting mi2log_xml to ml1.csv', stdout=True)
         
     else:
         print(args.onefile)

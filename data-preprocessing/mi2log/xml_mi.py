@@ -93,31 +93,35 @@ if __name__ == "__main__":
                 print(metadata)
                 print('--------------------------------------------------------')
                 raw_dir = os.path.join(metadata[0], 'raw')
-                filenames = [s for s in os.listdir(raw_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
+                middle_dir = os.path.join(metadata[0], 'middle')
                 data_dir = os.path.join(metadata[0], 'data')
                 makedir(data_dir)
                 
-                for j, filename in enumerate(filenames):
-                    fin = os.path.join(raw_dir, filename)
-                    # **********************
-                    t = TicToc(); t.tic()
-                    fout = os.path.join(data_dir, filename.replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
-                    print(f">>>>> {fin} -> {fout}")
-                    xml_to_csv_rrc(fin, fout)
-                    t.toc(); print()
-                    
-                    t = TicToc(); t.tic()
-                    fout = os.path.join(data_dir, filename.replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
-                    print(f">>>>> {fin} -> {fout}")
-                    xml_to_csv_nr_ml1(fin, fout)
-                    t.toc(); print()
-                    
-                    t = TicToc(); t.tic()
-                    fout = os.path.join(data_dir, filename.replace('.xml', '_ml1.csv').replace('.txt', '_ml1.csv'))
-                    print(f">>>>> {fin} -> {fout}")
-                    xml_to_csv_ml1(fin, fout)
-                    t.toc(); print()
-                    # **********************
+                try:
+                    filenames = [s for s in os.listdir(raw_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
+                except:
+                    filenames = [s for s in os.listdir(middle_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
+                
+                fin = os.path.join(raw_dir, filenames[0])
+                # **********************
+                t = TicToc(); t.tic()
+                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
+                print(f">>>>> {fin} -> {fout}")
+                xml_to_csv_rrc(fin, fout)
+                t.toc(); print()
+                
+                t = TicToc(); t.tic()
+                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
+                print(f">>>>> {fin} -> {fout}")
+                xml_to_csv_nr_ml1(fin, fout)
+                t.toc(); print()
+                
+                t = TicToc(); t.tic()
+                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_ml1.csv').replace('.txt', '_ml1.csv'))
+                print(f">>>>> {fin} -> {fout}")
+                xml_to_csv_ml1(fin, fout)
+                t.toc(); print()
+                # **********************
                 
                 print()
                     
