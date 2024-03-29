@@ -83,13 +83,16 @@ def mi_compensate(fin, sync_mapping):
     if sync_mapping is None:
         return
     
-    sync_mapping = {str_to_datetime(key): value for key, value in sync_mapping.items()}
+    df = generate_dataframe(fin, parse_dates=['Timestamp', 'Timestamp_BS'])
+    if df.empty:
+        df.reindex([*df.columns[:2], 'delta', *df.columns[2:-1]], axis='columns').to_csv(fin, index=False)
+        return
     
+    sync_mapping = {str_to_datetime(key): value for key, value in sync_mapping.items()}
     def find_nearest_key(timestamp):
         nearest_timestamp = min(sync_mapping.keys(), key=lambda x: abs(x - timestamp))
         return nearest_timestamp, sync_mapping[nearest_timestamp]
     
-    df = generate_dataframe(fin, parse_dates=['Timestamp'])
     st_t, _ = find_nearest_key(df.iloc[0]['Timestamp'])
     ed_t, _ = find_nearest_key(df.iloc[-1]['Timestamp'])
     
@@ -114,10 +117,11 @@ def mi_compensate(fin, sync_mapping):
         df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), dev_timestamp] = df[dev_timestamp].add(delta).dt.round(freq='us')
         df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), 'delta'] = epoch_delta
     
-    rearranged_columns = [*df.columns[:2], 'delta', *df.columns[:-1]]
-    
-    # df[rearranged_columns].to_csv('test.csv', index=False)
-    df[rearranged_columns].to_csv(fin, index=False)
+    rearranged_columns = [*df.columns[:2], 'delta', *df.columns[2:-1]]
+    df = df[rearranged_columns]
+    df = df[(df['Timestamp'] - df['Timestamp_BS'] - pd.Timedelta(hours=8)).dt.total_seconds() < 30].reset_index(drop=True)
+    df.to_csv(fin, index=False)
+    # df.to_csv('test.csv', index=False)
     return
 
 
@@ -161,19 +165,22 @@ if __name__ == "__main__":
                 fin = os.path.join(raw_dir, filenames[0])
                 # ******************************************************************
                 # t = TicToc(); t.tic()
+                # pop_error_message(signal='Compensating rrc.csv')
                 # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
                 # print(f">>>>> {fout}")
                 # mi_compensate(fout, sync_mapping=sync_mapping)
                 # t.toc(); print()
                 
                 # t = TicToc(); t.tic()
-                # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
+                # pop_error_message(signal='Compensating ml1.csv')
+                # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_ml1.csv').replace('.txt', '_ml1.csv'))
                 # print(f">>>>> {fout}")
                 # mi_compensate(fout, sync_mapping=sync_mapping)
                 # t.toc(); print()
                 
                 # t = TicToc(); t.tic()
-                # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_ml1.csv').replace('.txt', '_ml1.csv'))
+                # pop_error_message(signal='Compensating nr_ml1.csv')
+                # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
                 # print(f">>>>> {fout}")
                 # mi_compensate(fout, sync_mapping=sync_mapping)
                 # t.toc(); print()
