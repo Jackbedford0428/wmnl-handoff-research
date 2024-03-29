@@ -115,13 +115,13 @@ if __name__ == "__main__":
                 
                 fin = os.path.join(raw_dir, filenames[0])
                 # ******************************************************************
-                t = TicToc(); t.tic()
-                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
-                print(f">>>>> {fin} -> {fout}")
-                xml_to_csv_rrc(fin, fout)
-                print(">>>>> Compensating...")
-                mi_compensate(fout, sync_mapping=sync_mapping)
-                t.toc(); print()
+                # t = TicToc(); t.tic()
+                # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
+                # print(f">>>>> {fin} -> {fout}")
+                # xml_to_csv_rrc(fin, fout)
+                # print(">>>>> Compensating...")
+                # mi_compensate(fout, sync_mapping=sync_mapping)
+                # t.toc(); print()
                 
                 t = TicToc(); t.tic()
                 fout = os.path.join(data_dir, filenames[0].replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
