@@ -3,6 +3,7 @@
 import pandas as pd
 import datetime as dt
 from typing import List
+from typing import Union
 from packaging import version
 
 __all__ = [
@@ -13,7 +14,7 @@ __all__ = [
     "datetime_to_epoch",
 ]
 
-# pandas: pd.to_datetime("2022-09-29 16:24:58.252615") <class 'pandas._libs.tslibs.timestamps.Timestamp'>
+# pandas: pd.Timestamp("2022-09-29 16:24:58.252615") <class 'pandas._libs.tslibs.timestamps.Timestamp'>
 # datetime: dt.datetime(2022, 9, 29, 16, 24, 58, 252615) <class 'datetime.datetime'>
 
 def datetime_to_str(timestamp_datetime):
@@ -31,11 +32,12 @@ def str_to_datetime(timestamp_str, format='pd'):
             except:
                 return dt.datetime.strptime(timestamp_str, "%Y-%m-%d")
 
-def str_to_datetime_batch(df, parse_dates: List[str]):
-    if version.parse(pd.__version__) >= version.parse("2.0.0"):
-        df[parse_dates] = pd.to_datetime(df[parse_dates].stack(), format='mixed').unstack()
-    else:
-        df[parse_dates] = pd.to_datetime(df[parse_dates].stack()).unstack()
+def str_to_datetime_batch(df, parse_dates: Union[List[str], None] = None):
+    if parse_dates is not None:
+        if version.parse(pd.__version__) >= version.parse("2.0.0"):
+            df[parse_dates] = pd.to_datetime(df[parse_dates].stack(), format='mixed').unstack()
+        else:
+            df[parse_dates] = pd.to_datetime(df[parse_dates].stack()).unstack()
     return df
 
 def epoch_to_datetime(timestamp_epoch, format='pd', utc=8):

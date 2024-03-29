@@ -781,10 +781,9 @@ if __name__ == "__main__":
             raise TypeError("Please specify the date you want to process.")
         
         metadatas = metadata_loader(dates)
-        
         print('\n================================ Start Processing ================================')
-        pop_error_message(signal='Converting mi2log_xml to rrc.csv', stdout=True)
         
+        pop_error_message(signal='Converting mi2log_xml to rrc.csv', stdout=True)
         for metadata in metadatas:
             try:
                 print(metadata)

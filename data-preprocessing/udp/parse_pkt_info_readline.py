@@ -16,14 +16,8 @@ Update: Yuan-Jye Chen 2022/10/09
 
 """
     Future Development Plan
-        (1) Neglect filename start with ".~lock". (e.g., ".~lock.packet_info.csv#", ".~lock.client_pcap_BL_sm05_3210_3211_2022-09-29_16-24-57.csv#")
-        (2) Output packet loss statistics and lanency.
-        (3) Time synchronization. (preprocessing)
-        (4) functionalize
-        (5) 對一下 packet loss rate / packet loss number 是否與截圖 summary 相符
-        (6) 若一開始就掉封包，建議改成外插法預測！
-        (7) focus 在 UE 端狀況，因此 timestamp 應取 expected arrival time (DL) 和 transmit time (UL)，目前都是取 expected arrival time。
-        (8) readline of csv 逐行（不要一次 handle 整個 dataframe，因為 payload 太長，RAM 會爆掉），目前先把 rxdf, txdf 分別處理，不要兩個都讀進來才處理（30min-500pps-pcap.csv 還夠用）
+        (1) readline of csv 逐行（不要一次 handle 整個 dataframe，因為 payload 太長，RAM 會爆掉），目前先把 rxdf, txdf 分別處理，不要兩個都讀進來才處理（30min-500pps-pcap.csv 還夠用）
+        (2) 未來改用 udp sniffer 時，最好先確認一下 seq 沒有 duplicate，在這裡先處理掉 duplicate 的問題，好讓 parse loss latency 可以直接 pass
     
 """
 import os
@@ -188,19 +182,17 @@ if __name__ == "__main__":
         else:
             raise TypeError("Please specify the date you want to process.")
         
+        metadatas = metadata_loader(dates)
         print('\n================================ Start Processing ================================')
         
-        metadatas = metadata_loader(dates)
-        pop_error_message()
         pop_error_message(signal='Parsing packet info into brief format', stdout=True)
-        
         for metadata in metadatas:
             try:
                 print(metadata)
                 print('--------------------------------------------------------')
                 middle_dir = os.path.join(metadata[0], 'middle')
-                filenames = [s for s in os.listdir(middle_dir) if s.endswith('.csv')]
                 
+                filenames = [s for s in os.listdir(middle_dir) if s.endswith('.csv')]
                 # ******************************************************************
                 t = TicToc(); t.tic()
                 print('Server | Downlink')
