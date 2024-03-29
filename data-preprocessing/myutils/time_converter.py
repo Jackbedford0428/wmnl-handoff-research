@@ -53,6 +53,7 @@ def datetime_to_epoch(timestamp_datetime, utc=8):
     return timestamp_datetime.timestamp()  # convert the datetime object to unix timestamp
 
 
+# ===================== Test =====================
 if __name__ == "__main__":
     test_cases = ['2024-03-25', '2024-03-25 13:34:01', '2024-03-25 13:34:01.774182']
     
