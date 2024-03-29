@@ -22,11 +22,13 @@ import traceback
 from pytictoc import TicToc
 from bs4 import BeautifulSoup
 from pprint import pprint
+import json
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(1, parent_dir)
 
 from myutils import *
+from xml_mi_sync import *
 
 __all__ = [
     "xml_to_csv_nr_ml1",
@@ -128,7 +130,7 @@ def xml_to_csv_nr_ml1(fin, fout):
                     A.append(rsrps[i])
                     A.append(rsrqs[i])
 
-                x = len([timestamp, type_id, arfcn, num_cells, serving_cell_idex, serving_cell_pci] + A)
+                x = len([timestamp, timestamp_bs, type_id, arfcn, num_cells, serving_cell_idex, serving_cell_pci] + A)
                 max_length = x if x > max_length else max_length
                 f2.write(",".join([timestamp, timestamp_bs, type_id, arfcn, num_cells, serving_cell_idex, serving_cell_pci] + A) + "\n")
             
@@ -197,6 +199,16 @@ if __name__ == "__main__":
                 data_dir = os.path.join(metadata[0], 'data')
                 makedir(data_dir)
                 
+                sync_dir = os.path.abspath(os.path.join(metadata[0], '../../..', 'sync'))
+                sync_file = os.path.join(sync_dir, 'time_sync_{}.json'.format(metadata[4]))
+                if os.path.isfile(sync_file):
+                    with open(sync_file, 'r') as f:
+                        sync_mapping = json.load(f)
+                else:
+                    sync_mapping = None
+                
+                # print('sync_mapping:', sync_mapping)
+                
                 try:
                     filenames = [s for s in os.listdir(raw_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
                 except:
@@ -208,6 +220,7 @@ if __name__ == "__main__":
                 fout = os.path.join(data_dir, filenames[0].replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
                 print(f">>>>> {fin} -> {fout}")
                 xml_to_csv_nr_ml1(fin, fout)
+                mi_compensate(fout, sync_mapping=sync_mapping)
                 t.toc(); print()
                 # ******************************************************************
                 

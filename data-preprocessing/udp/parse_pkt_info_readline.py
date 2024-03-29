@@ -145,7 +145,8 @@ def parse_pkt_info(fin, fout, side, direction, protoc, locate='.'):
                     seq = int(payload[ofs + Payl.OFS_SEQN[0] : ofs + Payl.OFS_SEQN[1]], 16)
                 except Exception as e:
                     pop_error_message(e, locate=str(locate)+'\n'+str(['frame.time'])+', '+str(payload), raise_flag=True)
-                payload_time = epoch_to_datetime(datetimedec + microsec * 1e-6)
+                payload_time_epoch = round(datetimedec + microsec * 1e-6, 6)
+                payload_time = epoch_to_datetime(payload_time_epoch)
                 
                 sequence_list.append(seq)
                 payload_time_list.append(payload_time)

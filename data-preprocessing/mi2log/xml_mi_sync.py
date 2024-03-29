@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# Filename: xml_mi.py
+# Filename: xml_mi_rrc_sync.py
 """
-This script requires the txt or xml file which is generated from mi_offline_analysis.py and the mi2log file.
-The rows show the information of each diagnostic mode packets (dm_log_packet) from MobileInsight.
-The columns are indicators about whether a packet has the type of the message or not.
+This script is to synchronize device time to our lab server.
 
-Author: Sheng-Ru Zeng
+Author: Yuan-Jye Chen
 Update: Yuan-Jye Chen 2024-03-29
 """
 
@@ -21,16 +19,20 @@ import time
 import traceback
 from pytictoc import TicToc
 from pprint import pprint
+from tqdm import tqdm
+import csv
 import json
+import pandas as pd
+import numpy as np
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(1, parent_dir)
 
 from myutils import *
-from xml_mi_rrc import *
-from xml_mi_nr_ml1 import *
-from xml_mi_ml1 import *
-from xml_mi_sync import *
+
+__all__ = [
+    "mi_compensate",
+]
 
 
 # ===================== Arguments =====================
@@ -76,6 +78,49 @@ def pop_error_message(error_message=None, locate='.', signal=None, logfile=None,
             print('--------------------------------------------------------')
 
 
+# ===================== Features =====================
+def mi_compensate(fin, sync_mapping):
+    if sync_mapping is None:
+        return
+    
+    sync_mapping = {str_to_datetime(key): value for key, value in sync_mapping.items()}
+    
+    def find_nearest_key(timestamp):
+        nearest_timestamp = min(sync_mapping.keys(), key=lambda x: abs(x - timestamp))
+        return nearest_timestamp, sync_mapping[nearest_timestamp]
+    
+    df = generate_dataframe(fin, parse_dates=['Timestamp'])
+    st_t, _ = find_nearest_key(df.iloc[0]['Timestamp'])
+    ed_t, _ = find_nearest_key(df.iloc[-1]['Timestamp'])
+    
+    sync_mapping_df = pd.DataFrame(sync_mapping.values(), index=sync_mapping.keys(), columns=['delta']).reset_index(names='Timestamp')
+    sync_mapping_df = sync_mapping_df[(sync_mapping_df['Timestamp'] >= st_t) & (sync_mapping_df['Timestamp'] <= ed_t)]
+    # sync_mapping = sync_mapping_df.set_index('Timestamp')['delta'].to_dict()
+    
+    sync_mapping_df['prev_Timestamp'] = sync_mapping_df['Timestamp'].shift(1)
+    sync_mapping_df['next_Timestamp'] = sync_mapping_df['Timestamp'].shift(-1)
+    sync_mapping_df['lower_bound'] = pd.Timestamp.min
+    sync_mapping_df.loc[sync_mapping_df['prev_Timestamp'].notna(), 'lower_bound'] = (sync_mapping_df['prev_Timestamp'] + (sync_mapping_df['Timestamp'] - sync_mapping_df['prev_Timestamp']) / 2).dt.round(freq='us')
+    sync_mapping_df['upper_bound'] = pd.Timestamp.max
+    sync_mapping_df.loc[sync_mapping_df['next_Timestamp'].notna(), 'upper_bound'] = (sync_mapping_df['Timestamp'] + (sync_mapping_df['next_Timestamp'] - sync_mapping_df['Timestamp']) / 2).dt.round(freq='us')
+    
+    # print(sync_mapping_df)
+    
+    dev_timestamp = 'Timestamp'
+    for i, row in sync_mapping_df.iterrows():
+        lower, upper = row['lower_bound'], row['upper_bound']
+        epoch_delta = round(row['delta'], 6)
+        delta = pd.Timedelta(seconds=epoch_delta)
+        df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), dev_timestamp] = df[dev_timestamp].add(delta).dt.round(freq='us')
+        df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), 'delta'] = epoch_delta
+    
+    rearranged_columns = [*df.columns[:2], 'delta', *df.columns[:-1]]
+    
+    # df[rearranged_columns].to_csv('test.csv', index=False)
+    df[rearranged_columns].to_csv(fin, index=False)
+    return
+
+
 # ===================== Main Process =====================
 if __name__ == "__main__":
     if args.onefile is None:
@@ -88,7 +133,7 @@ if __name__ == "__main__":
         metadatas = metadata_loader(dates)
         print('\n================================ Start Processing ================================')
         
-        pop_error_message(signal='Converting mi2log_xml to *.csv', stdout=True)
+        pop_error_message(signal='Patch up S/BS time synchorizing for mi2log files', stdout=True)
         for metadata in metadatas:
             try:
                 print(metadata)
@@ -115,29 +160,23 @@ if __name__ == "__main__":
                 
                 fin = os.path.join(raw_dir, filenames[0])
                 # ******************************************************************
-                t = TicToc(); t.tic()
-                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
-                print(f">>>>> {fin} -> {fout}")
-                xml_to_csv_rrc(fin, fout)
-                print(">>>>> Compensating...")
-                mi_compensate(fout, sync_mapping=sync_mapping)
-                t.toc(); print()
+                # t = TicToc(); t.tic()
+                # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
+                # print(f">>>>> {fout}")
+                # mi_compensate(fout, sync_mapping=sync_mapping)
+                # t.toc(); print()
                 
-                t = TicToc(); t.tic()
-                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
-                print(f">>>>> {fin} -> {fout}")
-                xml_to_csv_nr_ml1(fin, fout)
-                print(">>>>> Compensating...")
-                mi_compensate(fout, sync_mapping=sync_mapping)
-                t.toc(); print()
+                # t = TicToc(); t.tic()
+                # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_nr_ml1.csv').replace('.txt', '_nr_ml1.csv'))
+                # print(f">>>>> {fout}")
+                # mi_compensate(fout, sync_mapping=sync_mapping)
+                # t.toc(); print()
                 
-                t = TicToc(); t.tic()
-                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_ml1.csv').replace('.txt', '_ml1.csv'))
-                print(f">>>>> {fin} -> {fout}")
-                xml_to_csv_ml1(fin, fout)
-                print(">>>>> Compensating...")
-                mi_compensate(fout, sync_mapping=sync_mapping)
-                t.toc(); print()
+                # t = TicToc(); t.tic()
+                # fout = os.path.join(data_dir, filenames[0].replace('.xml', '_ml1.csv').replace('.txt', '_ml1.csv'))
+                # print(f">>>>> {fout}")
+                # mi_compensate(fout, sync_mapping=sync_mapping)
+                # t.toc(); print()
                 # ******************************************************************
                 
                 print()
@@ -145,7 +184,7 @@ if __name__ == "__main__":
             except Exception as e:
                 pop_error_message(e, locate=metadata)
                 
-        pop_error_message(signal='Finish converting mi2log_xml to *.csv', stdout=True)
+        pop_error_message(signal='Finish S/BS time synchorizing for mi2log files', stdout=True)
         
     else:
         print(args.onefile)

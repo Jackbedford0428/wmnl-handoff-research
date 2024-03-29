@@ -38,6 +38,7 @@ THRESHOLD = 100e-3  # (seconds)
 # ===================== Utils =====================
 HASH_SEED = time.time()
 LOGFILE = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
+RECORDS = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '_records.log'
 
 def pop_error_message(error_message=None, locate='.', signal=None, logfile=None, stdout=False, raise_flag=False):
     if logfile is None:
@@ -233,11 +234,11 @@ def get_latency(df, direction, sync_mapping, thr=100e-3):
             
         for i, row in sync_mapping_df.iterrows():
             lower, upper = row['lower_bound'], row['upper_bound']
-            epoch_delta = row['delta']
+            epoch_delta = round(row['delta'], 6)
             delta = pd.Timedelta(seconds=epoch_delta)
             for col in target_columns:
-                df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), f'{col}_epoch'] = df[f'{col}_epoch'].add(epoch_delta)
-                df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), col] = df[col].add(delta)
+                df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), f'{col}_epoch'] = df[f'{col}_epoch'].add(epoch_delta).round(6)
+                df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), col] = df[col].add(delta).dt.round(freq='us')
             df.loc[(df[dev_timestamp] >= lower) & (df[dev_timestamp] < upper), 'delta'] = epoch_delta
         
         return df
@@ -251,7 +252,7 @@ def get_latency(df, direction, sync_mapping, thr=100e-3):
     return df
 
 
-def get_statistics(df, fout, thr=100e-3):
+def get_statistics(df, fout, thr=100e-3, dump_log=RECORDS):
     rows = []
     rows.append(['experimental duration', round(df['Timestamp_epoch'].iloc[-1] - df['Timestamp_epoch'].iloc[0], 6) if len(df) else 0.0, 'sec'])
     rows.append(['total packets sent', len(df), ''])
@@ -282,11 +283,16 @@ def get_statistics(df, fout, thr=100e-3):
         writer.writerows(rows)
     
     max_length = max(len(sublist[0]) for sublist in rows) + 1
-    print("-----------------------------------------------------")
-    for row in rows:
-        key, value, unit = row[0], row[1], row[2]
-        print(f'{key}:'.ljust(max_length), round(value, 6), unit)
-    print("-----------------------------------------------------")
+    
+    with open(dump_log, "a") as f:
+        print("-----------------------------------------------------")
+        f.write("-----------------------------------------------------\n")
+        for row in rows:
+            key, value, unit = row[0], row[1], row[2]
+            print(f'{key}:'.ljust(max_length), round(value, 6), unit)
+            f.write(''.join([f'{key}: '.ljust(max_length + 1), ' ', str(round(value, 6)), ' ', unit, '\n']))
+        print("-----------------------------------------------------")
+        f.write("-----------------------------------------------------\n\n")
 
 
 # ===================== Main Process =====================
@@ -350,6 +356,8 @@ if __name__ == "__main__":
                     df = get_latency(df.copy(), direction=direction, sync_mapping=sync_mapping, thr=THRESHOLD)
                     df.to_csv(fout, index=False)
                     print(f">>>>> {fout1}")
+                    with open(RECORDS, "a") as f:
+                        f.write(f">>>>> {fout1}\n")
                     get_statistics(df, fout1, thr=THRESHOLD)
                     t.toc(); print()
                     # ******************************************************************

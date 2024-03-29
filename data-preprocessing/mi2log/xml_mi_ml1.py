@@ -23,11 +23,13 @@ from pytictoc import TicToc
 from bs4 import BeautifulSoup
 from pprint import pprint
 from itertools import chain
+import json
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(1, parent_dir)
 
 from myutils import *
+from xml_mi_sync import *
 
 __all__ = [
     "xml_to_csv_ml1",
@@ -137,7 +139,7 @@ def xml_to_csv_ml1(fin, fout):
                     PCIs = PCIs[:-int(n_det_c)]
                 A = [[PCIs[i], rsrps[i+1], rsrqs[i+1]] for i in range(len(PCIs))] ## Information of neighbor cell
                 A = list(chain.from_iterable(A))
-                x = len([timestamp, type_id, PCI, rsrps[0], rsrqs[0], serving_cell, earfcn, n_nei_c, n_det_c] + A)
+                x = len([timestamp, timestamp_bs, type_id, PCI, rsrps[0], rsrqs[0], serving_cell, earfcn, n_nei_c, n_det_c] + A)
                 max_length = x if x > max_length else max_length
                 f2.write(",".join([timestamp, timestamp_bs, type_id, PCI, rsrps[0], rsrqs[0], serving_cell, earfcn, n_nei_c, n_det_c] + A) + "\n")
 
@@ -207,6 +209,16 @@ if __name__ == "__main__":
                 data_dir = os.path.join(metadata[0], 'data')
                 makedir(data_dir)
                 
+                sync_dir = os.path.abspath(os.path.join(metadata[0], '../../..', 'sync'))
+                sync_file = os.path.join(sync_dir, 'time_sync_{}.json'.format(metadata[4]))
+                if os.path.isfile(sync_file):
+                    with open(sync_file, 'r') as f:
+                        sync_mapping = json.load(f)
+                else:
+                    sync_mapping = None
+                
+                # print('sync_mapping:', sync_mapping)
+                
                 try:
                     filenames = [s for s in os.listdir(raw_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
                 except:
@@ -218,6 +230,7 @@ if __name__ == "__main__":
                 fout = os.path.join(data_dir, filenames[0].replace('.xml', '_ml1.csv').replace('.txt', '_ml1.csv'))
                 print(f">>>>> {fin} -> {fout}")
                 xml_to_csv_ml1(fin, fout)
+                mi_compensate(fout, sync_mapping=sync_mapping)
                 t.toc(); print()
                 # ******************************************************************
                 

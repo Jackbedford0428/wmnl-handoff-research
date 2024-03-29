@@ -23,11 +23,13 @@ import re
 from pytictoc import TicToc
 from bs4 import BeautifulSoup
 from pprint import pprint
+import json
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(1, parent_dir)
 
 from myutils import *
+from xml_mi_sync import *
 
 __all__ = [
     "xml_to_csv_rrc",
@@ -793,6 +795,16 @@ if __name__ == "__main__":
                 data_dir = os.path.join(metadata[0], 'data')
                 makedir(data_dir)
                 
+                sync_dir = os.path.abspath(os.path.join(metadata[0], '../../..', 'sync'))
+                sync_file = os.path.join(sync_dir, 'time_sync_{}.json'.format(metadata[4]))
+                if os.path.isfile(sync_file):
+                    with open(sync_file, 'r') as f:
+                        sync_mapping = json.load(f)
+                else:
+                    sync_mapping = None
+                
+                # print('sync_mapping:', sync_mapping)
+                
                 try:
                     filenames = [s for s in os.listdir(raw_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
                 except:
@@ -804,6 +816,7 @@ if __name__ == "__main__":
                 fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
                 print(f">>>>> {fin} -> {fout}")
                 xml_to_csv_rrc(fin, fout)
+                mi_compensate(fout, sync_mapping=sync_mapping)
                 t.toc(); print()
                 # ******************************************************************
                 
