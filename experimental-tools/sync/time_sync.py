@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# Author: Chen Yuan-Jye, Kuo Wei-Zhe
+
 import os
 import socket
 import time

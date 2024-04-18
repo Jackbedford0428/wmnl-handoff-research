@@ -1,17 +1,17 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# Filename: tcp_pcap_to_csv.py
+# Filename: udp_pcap_to_csv.py
 """
 Convert udp pcap into csv format and extract the features needed.
 
 Usages:
 (1) Decode only one file. 
-$ python3 tcp_pcap_to_csv.py [-i <input filepath>]
-$ python3 tcp_pcap_to_csv.py -i data/client_pcap_BL_sm03_3206_3207_2024-03-19_19-55-46_sock.pcap
+$ python3 udp_pcap_to_csv.py [-i <input filepath>]
+$ python3 udp_pcap_to_csv.py -i data/client_pcap_BL_sm03_3206_3207_2024-03-19_19-55-46_sock.pcap
 
 (2) Decode files a batch of files on specific dates.
-$ python3 tcp_pcap_to_csv.py [-d <date>[ date2 date3 ...]]
-$ python3 tcp_pcap_to_csv.py -d 2024-03-19 2024-03-20
+$ python3 udp_pcap_to_csv.py [-d <date>[ date2 date3 ...]]
+$ python3 udp_pcap_to_csv.py -d 2024-03-19 2024-03-20
 
 Author: Yuan-Jye Chen
 Update: Yuan-Jye Chen 2024-03-27
@@ -29,6 +29,7 @@ import time
 import traceback
 import subprocess
 from pytictoc import TicToc
+from pprint import pprint
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(1, parent_dir)
@@ -108,22 +109,17 @@ def pcap_to_csv(fin, fout):
           -e frame.number -e frame.time -e frame.time_epoch -e frame.len \
           -e sll.pkttype -e _ws.col.Protocol \
           -e ip.proto -e ip.len -e ip.src -e ip.dst \
-          -e tcp.len -e tcp.srcport -e tcp.dstport \
-          -e data.len -e tcp.payload -e _ws.col.Info \
-          -e tcp.seq_raw -e tcp.seq -e tcp.nxtseq -e tcp.ack_raw -e tcp.ack \
-          -e tcp.analysis.acks_frame -e tcp.analysis.ack_rtt \
-          -e tcp.analysis.initial_rtt -e tcp.analysis.bytes_in_flight -e tcp.analysis.push_bytes_sent \
-          -e tcp.analysis.retransmission -e tcp.analysis.fast_retransmission \
-          -e tcp.analysis.out_of_order \
+          -e udp.length -e udp.srcport -e udp.dstport \
+          -e data.len -e udp.payload -e _ws.col.Info \
           -E header=y -E separator=@ > {fout}"
-    
+          
     p = subprocess.Popen(s, shell=True, preexec_fn=os.setpgrp)
     while p.poll() is None:
         # print(p.pid, p.poll())
         time.sleep(1)
 
 
-# ===================== Main Process =====================        
+# ===================== Main Process =====================
 if __name__ == "__main__":
     if args.onefile is None:
         

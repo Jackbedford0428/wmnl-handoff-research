@@ -1,62 +1,85 @@
-######xml_mi.py#########
-#==============instructions==============
-######This file requires the txt file which is generated from offline_analysis.py and the mi2log file
-######The rows shows the information of each diag mode packets (dm_log_packet) from Mobile Insight 
-######The columns are indicators about whether a packet has the type of the message
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# Filename: xml_mi_rrc.py
+"""
+This script requires the txt or xml file which is generated from mi_offline_analysis.py and the mi2log file.
+The rows show the information of each diagnostic mode packets (dm_log_packet) from MobileInsight.
+The columns are indicators about whether a packet has the type of the message or not.
 
-from bs4 import BeautifulSoup
-import sys
+Author: Sheng-Ru Zeng
+Update: Yuan-Jye Chen 2024-03-27
+"""
+
+"""
+    Future Development Plans:
+    
+"""
 import os
-from pprint import pprint
+import sys
 import argparse
+import time
+import traceback
+import re
 from pytictoc import TicToc
+from bs4 import BeautifulSoup
+from pprint import pprint
+import json
 
-# --------------------- Arguments ---------------------
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(1, parent_dir)
+
+from myutils import *
+from xml_mi_sync import *
+
+__all__ = [
+    "xml_to_csv_rrc",
+]
+
+
+# ===================== Arguments =====================
 parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--input", type=str,
-                    help="input filepath")
-parser.add_argument("-D", "--indir", type=str,
-                    help="input dirctory path")
-parser.add_argument("-O", "--outdir", type=str,
-                    help="output dirctory path")
+parser.add_argument("-i", "--onefile", type=str, help="input filepath")
+parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
 args = parser.parse_args()
 
-# ******************************* User Settings *******************************
-database = "/home/wmnlab/D/database/"
-# date = "2022-11-29"
-date = "2022-12-09-mobile-test"
-devices = sorted([
-    # "sm00",
-    # "sm01",
-    # "sm02",
-    # "sm03",
-    # "sm04",
-    "sm05",
-    # "sm06",
-    # "sm07",
-    "sm08",
-    # "qc00",
-    # "qc01",
-    # "qc02",
-    # "qc03",
-])
-exps = {  # experiment_name: (number_of_experiment_rounds, list_of_experiment_round)
-            # If the list is None, it will not list as directories.
-            # If the list is empty, it will list all directories in the current directory by default.
-            # If the number of experiment times != the length of existing directories of list, it would trigger warning and skip the directory.
-    # "tsync": (1, None),
-    # "_Bandlock_Udp": (4, ["#01", "#02", "#03", "#04"]),
-    # "_Bandlock_Udp": (4, ["#03", "#04", "#05", "#06"]),
-    # "_Bandlock_Udp": (4, []),
-    # "_Bandlock_Udp": (6, []),
-    # "_Bandlock_Udp_B1_B3":  (4, []),
-    # "_Bandlock_Udp_B3_B28": (4, []),
-    # "_Bandlock_Udp_B28_B1": (4, []),
-    "_Mobile_Bandlock_Test": (1, None),
-}
-# *****************************************************************************
 
-# **************************** Auxiliary Functions ****************************
+# ===================== Utils =====================
+HASH_SEED = time.time()
+LOGFILE = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
+
+def pop_error_message(error_message=None, locate='.', signal=None, logfile=None, stdout=False, raise_flag=False):
+    if logfile is None:
+        logfile = LOGFILE
+    
+    file_exists = os.path.isfile(logfile)
+
+    with open(logfile, "a") as f:
+        if not file_exists:
+            f.write(''.join([os.path.abspath(__file__), '\n']))
+            f.write(''.join(['Start Logging: ', time.strftime('%Y-%m-%d %H:%M:%S'), '\n']))
+            f.write('--------------------------------------------------------\n')
+        
+        if signal is None:
+            f.write(time.strftime('%Y-%m-%d %H:%M:%S') + "\n")
+            f.write(str(locate) + "\n")
+            f.write(traceback.format_exc())
+            f.write('--------------------------------------------------------\n')
+        else:
+            f.write(''.join([f'{signal}: ', time.strftime('%Y-%m-%d %H:%M:%S'), '\n']))
+            f.write('--------------------------------------------------------\n')
+    
+    if raise_flag: raise
+    
+    if stdout:
+        if signal is None:
+            sys.stderr.write(traceback.format_exc())
+            print('--------------------------------------------------------')
+        else:
+            print(signal)
+            print('--------------------------------------------------------')
+
+
+# ===================== Auxiliary Functions =====================
 def get_text(l, NAME): ## Given l, return XXXX if NAME in l, else it will error, with format "NAME: XXXX".
     a = l.index('"' + NAME)
     k = len(NAME)+3
@@ -99,88 +122,6 @@ def get_meas_report_pairs(f, sep="&"): ## (MeasId & measObjectId & reportConfigI
     reportConfigId = get_text(l, "reportConfigId")
     return '('+measId+sep+measObjectId+sep+reportConfigId+')'
 
-# def get_event_paras(f, eventId, l):
-
-#     def lte_get_hys_and_ttt():
-#         l = passlines(4, f)
-#         hysteresis = get_text(l, "hysteresis")
-#         hysteresis = hysteresis.split(" ")[0]
-#         l = passlines(2, f)
-#         timeToTrigger = get_text(l, "timeToTrigger")
-#         timeToTrigger = timeToTrigger.split(" ")[0]
-#         return  hysteresis, timeToTrigger 
-    
-#     def nr_get_hys_and_ttt():
-#         l = passlines(3, f)
-#         hysteresis = get_text(l, "hysteresis")
-#         hysteresis = hysteresis.split(" ")[0]
-#         l = passlines(2, f)
-#         timeToTrigger = get_text(l, "timeToTrigger")
-#         timeToTrigger = timeToTrigger.split(" ")[0]
-#         return  hysteresis, timeToTrigger 
-
-#     paras = {}
-#     if eventId == "eventA1 (0)" or eventId == "eventA2 (1)": ## A1 or A2
-#         if "\"lte-rrc.eventId\"" in l:
-#             l = passlines(4, f)
-#             threshold =  get_text(l, "threshold-RSRP")
-#             threshold = threshold.split(" ")[0]
-#             hysteresis, timeToTrigger = lte_get_hys_and_ttt()
-#             paras['thr'], paras['hys'], paras['ttt'] = threshold, hysteresis, timeToTrigger
-#         elif "\"nr-rrc.eventId\"" in l:
-#             l = passlines(4, f)
-#             threshold =  get_text(l, "rsrp")
-#             threshold = '[' + threshold.split(" ")[0] + ', ' + threshold.split(" ")[4] + ')'
-#             hysteresis, timeToTrigger = nr_get_hys_and_ttt()
-#             paras['thr'], paras['hys'], paras['ttt'] = threshold, hysteresis, timeToTrigger
-#     elif eventId == "eventA3 (2)": ## A3
-#         if "\"lte-rrc.eventId\"" in l:
-#             l = passlines(2, f)
-#             offset =  get_text(l, "a3-Offset")
-#             offset = offset.split(" ")[0]
-#             hysteresis, timeToTrigger = lte_get_hys_and_ttt()
-#             paras['off'], paras['hys'], paras['ttt'] = offset, hysteresis, timeToTrigger
-#         elif "\"nr-rrc.eventId\"" in l:
-#             l = passlines(4, f)
-#             offset = get_text(l, "rsrp")
-#             hysteresis, timeToTrigger = nr_get_hys_and_ttt()
-#             paras['off'], paras['hys'], paras['ttt'] = offset, hysteresis, timeToTrigger
-#     elif eventId == "eventA5 (4)": ## A5
-#         if "\"lte-rrc.eventId\"" in l:
-#             l = passlines(4, f)
-#             threshold1 =  get_text(l, "threshold-RSRP")
-#             threshold1 = threshold1.split(" ")[0]
-#             l = passlines(4, f)
-#             threshold2 =  get_text(l, "threshold-RSRP")
-#             threshold2 = threshold2.split(" ")[0]
-#             hysteresis, timeToTrigger = lte_get_hys_and_ttt()
-#             paras['thr1'], paras['thr2'], paras['hys'], paras['ttt'] = threshold1, threshold2, hysteresis, timeToTrigger
-#         elif "\"nr-rrc.eventId\"" in l:
-#             pass
-#     elif eventId == "eventA6-r10 (5)": ## A6
-#         if "\"lte-rrc.eventId\"" in l:
-#             l = passlines(2, f)
-#             offset =  get_text(l, "a6-Offset-r10")
-#             offset = offset.split(" ")[0]
-#             hysteresis, timeToTrigger = lte_get_hys_and_ttt()
-#             paras['off'], paras['hys'], paras['ttt'] = offset, hysteresis, timeToTrigger
-#         elif "\"nr-rrc.eventId\"" in l:
-#             pass
-#     elif eventId == "eventB1-NR-r15 (5)": ## interRAT B1
-#         if "\"lte-rrc.eventId\"" in l:
-#             l = passlines(4, f)
-#             offset =  get_text(l, "nr-RSRP-r15")
-#             offset = '[' + offset.split(" ")[0] + ', ' + offset.split(" ")[4] + ')'
-#             l = f.readline()
-#             hysteresis, timeToTrigger = lte_get_hys_and_ttt()
-#             paras['thr'], paras['hys'], paras['ttt'] = offset, hysteresis, timeToTrigger
-#         elif "\"nr-rrc.eventId\"" in l:
-#             pass
-#     else:
-#         pass
-    
-#     return str(paras).replace(',', '&')
-
 def get_event_paras(f, eventId, l):
 
     def lte_get_hys_and_ttt():
@@ -214,8 +155,13 @@ def get_event_paras(f, eventId, l):
             paras['thr'], paras['hys'], paras['ttt'] = threshold, hysteresis, timeToTrigger
         elif "\"nr-rrc.eventId\"" in l:
             l = passlines(4, f)
+
             threshold =  get_text(l, "rsrp")
-            threshold = '[' + threshold.split(" ")[0] + ', ' + threshold.split(" ")[4] + ')'
+            # Deal with some special case. 
+            try:
+                threshold = '[' + threshold.split(" ")[0] + ', ' + threshold.split(" ")[4] + ')'
+            except:
+                threshold = threshold.split(" ")[2]
             hysteresis, timeToTrigger = nr_get_hys_and_ttt()
             paras['thr'], paras['hys'], paras['ttt'] = threshold, hysteresis, timeToTrigger
     elif eventId == "eventA3 (2)": ## A3
@@ -272,13 +218,18 @@ def get_event_paras(f, eventId, l):
     
     return str(paras).replace(',', '&')
 
+
+# ===================== Features =====================
 def xml_to_csv_rrc(fin, fout):
-    f = open(fin, encoding='utf-8')
-    f2 = open(fout, 'w') # _rrc.csv
-    # print("rrc >>>>>")
+    f = open(fin, encoding='utf-8')  # diag_log_xxxx_xxxx_rrc.xml
+    f2 = open(fout, 'w')  # diag_log_xxxx_xxxx_rrc.csv
+    
+    delete = False
+    
     # Writing the column names... If you want to add something, don't forget the comma at the end!!
     # -------------------------------------------------
-    f2.write(",".join(["Timestamp", "type_id",
+    f2.write(",".join([
+        "Timestamp", "Timestamp_BS", "type_id",
         "PCI",
         "UL_DL",
         "Freq",
@@ -402,11 +353,11 @@ def xml_to_csv_rrc(fin, fout):
         "bandEUTRA",
         ###########################
 
-        ])+'\n')
+    ]) + "\n")
 
-    #For each dm_log_packet, we will check that whether strings in type_list are shown in it.
-    #If yes, type_code will record what types in type_list are shown in the packet.
-    #-------------------------------------------------
+    # For each dm_log_packet, we will check that whether strings in type_list are shown in it.
+    # If yes, type_code will record what types in type_list are shown in the packet.
+    # -------------------------------------------------
     type_list = [
 
         ## MeasurementReport Related 
@@ -519,7 +470,7 @@ def xml_to_csv_rrc(fin, fout):
         "bandEUTRA",
         ###########################
 
-        ]
+    ]
 
     l = f.readline()
             
@@ -527,7 +478,17 @@ def xml_to_csv_rrc(fin, fout):
         if r"<dm_log_packet>" in l:
             type_code = ["0"] * len(type_list)
             soup = BeautifulSoup(l, 'html.parser')
-            timestamp = soup.find(key="timestamp").get_text()
+            # try:
+            #     if r"</dm_log_packet>" in l:
+            #         timestamp = soup.find(key='device_timestamp').get_text()
+            # except:
+            #     print('line:', iter_number)
+            #     raise
+            
+            if r"</dm_log_packet>" in l:
+                timestamp = soup.find(key='device_timestamp').get_text()
+                
+            timestamp_bs = soup.find(key="timestamp").get_text()
             type_id = soup.find(key="type_id").get_text()
             try:
                 PCI = soup.find(key="Physical Cell ID").get_text()
@@ -535,8 +496,6 @@ def xml_to_csv_rrc(fin, fout):
             except:
                 PCI = "-"
                 Freq = '-'
-
-            
 
             if type_id == "LTE_RRC_Serv_Cell_Info": # 處理serv cell info
                 PCI = soup.find(key="Cell ID").get_text()
@@ -548,15 +507,23 @@ def xml_to_csv_rrc(fin, fout):
                 TAC = soup.find(key="TAC").get_text()
                 Band_ID = soup.find(key="Band Indicator").get_text()
                 MCC = soup.find(key="MCC").get_text()
-                # MNC_d = soup.find(key="MNC Digit").get_text()
+                # MNC_digit = soup.find(key="MNC Digit").get_text()
                 MNC = soup.find(key="MNC").get_text()                
-                f2.write(",".join([timestamp, type_id, PCI,'','', DL_f, UL_f, DL_BW, UL_BW, Cell_identity, TAC, Band_ID, MCC, MNC] )+'\n')
+                f2.write(",".join([timestamp, timestamp_bs, type_id, PCI,'','', DL_f, UL_f, DL_BW, UL_BW, Cell_identity, TAC, Band_ID, MCC, MNC]) + "\n")
                 l = f.readline()
                 continue
                 
             elif type_id != 'LTE_RRC_OTA_Packet' and type_id != '5G_NR_RRC_OTA_Packet': ## 過濾其他只處理RRC
                 while l and r"</dm_log_packet>" not in l:
                     l = f.readline()
+                # soup = BeautifulSoup(l, 'html.parser')
+                # try:
+                #     if r"</dm_log_packet>" in l:
+                #         timestamp = soup.find(key='device_timestamp').get_text()
+                # except:
+                #     print('line:', iter_number)
+                #     raise
+                
                 l = f.readline()
                 continue
 
@@ -781,10 +748,21 @@ def xml_to_csv_rrc(fin, fout):
                         c += 1
                     
                     l = f.readline()
+                soup = BeautifulSoup(l, 'html.parser')
+                # try:
+                #     if r"</dm_log_packet>" in l:
+                #         timestamp = soup.find(key='device_timestamp').get_text()
+                # except:
+                #     print('line:', iter_number)
+                #     raise
+                
+                if r"</dm_log_packet>" in l:
+                    timestamp = soup.find(key='device_timestamp').get_text()
+                    
                 l = f.readline()
-                f2.write(",".join([timestamp, type_id, PCI, UL_DL, Freq] + ['']*9 + type_code)+'\n')
+                f2.write(",".join([timestamp, timestamp_bs, type_id, PCI, UL_DL, Freq] + ['']*9 + type_code) + "\n")
         else:
-            print(l,"Error! Invalid data content.")
+            print(l, "Error! Invalid data content.")
             delete = True
             break 
     
@@ -792,194 +770,62 @@ def xml_to_csv_rrc(fin, fout):
     f.close()
     
     if delete:
-        os.system(f"rm {f_out}")
-# *****************************************************************************
+        os.system(f"rm {fout}")
+        
 
-# ****************************** Utils Functions ******************************
-def makedir(dirpath, mode=0):  # mode=1: show message, mode=0: hide message
-    if os.path.isdir(dirpath):
-        if mode:
-            print("mkdir: cannot create directory '{}': directory has already existed.".format(dirpath))
-        return
-    ### recursively make directory
-    _temp = []
-    while not os.path.isdir(dirpath):
-        _temp.append(dirpath)
-        dirpath = os.path.dirname(dirpath)
-    while _temp:
-        dirpath = _temp.pop()
-        print("mkdir", dirpath)
-        os.mkdir(dirpath)
-# *****************************************************************************
-
-
+# ===================== Main Process =====================
 if __name__ == "__main__":
-    def fgetter():
-        files_collection = []
-        tags = "diag_log"
-        for filename in filenames:
-            if filename.startswith(tags) and filename.endswith(".txt"):
-                files_collection.append(filename)
-        return files_collection
-    
-    def main():
-        files_collection = fgetter()
-        if len(files_collection) == 0:
-            print("No candidate file.")
-        for filename in files_collection:
-            fin = os.path.join(source_dir, filename)
-            fout = os.path.join(target_dir, "{}_rrc.csv".format(filename[:-4]))
-            print(">>>>> convert from '{}' into '{}'...".format(fin, fout))
-            xml_to_csv_rrc(fin, fout)
-        print()
-
-    # ******************************* Check Files *********************************
-    for expr, (times, traces) in exps.items():
-        print(os.path.join(database, date, expr))
-        for dev in devices:
-            if not os.path.isdir(os.path.join(database, date, expr, dev)):
-                print("|___ {} does not exist.".format(os.path.join(database, date, expr, dev)))
-                continue
-            
-            print("|___", os.path.join(database, date, expr, dev))
-            if traces == None:
-                # print(os.path.join(database, date, expr, dev))
-                continue
-            elif len(traces) == 0:
-                traces = sorted(os.listdir(os.path.join(database, date, expr, dev)))
-            
-            print("|    ", times)
-            traces = [trace for trace in traces if os.path.isdir(os.path.join(database, date, expr, dev, trace))]
-            if len(traces) != times:
-                print("***************************************************************************************")
-                print("Warning: the number of traces does not match the specified number of experiment times.")
-                print("***************************************************************************************")
-            for trace in traces:
-                print("|    |___", os.path.join(database, date, expr, dev, trace))
-        print()
-    # *****************************************************************************
-
-    # ******************************** Processing *********************************
-    t = TicToc()  # create instance of class
-    t.tic()       # Start timer
-    err_handles = []
-    for expr, (times, traces) in exps.items():
-        for dev in devices:
-            if not os.path.isdir(os.path.join(database, date, expr, dev)):
-                print("{} does not exist.\n".format(os.path.join(database, date, expr, dev)))
-                continue
-
-            if traces == None:
-                print("------------------------------------------")
-                print(date, expr, dev)
-                print("------------------------------------------")
-                source_dir = os.path.join(database, date, expr, dev)
-                target_dir = os.path.join(database, date, expr, dev)
-                makedir(target_dir)
-                filenames = os.listdir(source_dir)
-                main()
-                continue
-            elif len(traces) == 0:
-                traces = sorted(os.listdir(os.path.join(database, date, expr, dev)))
-            
-            traces = [trace for trace in traces if os.path.isdir(os.path.join(database, date, expr, dev, trace))]
-            for trace in traces:
-                print("------------------------------------------")
-                print(date, expr, dev, trace)
-                print("------------------------------------------")
-                source_dir = os.path.join(database, date, expr, dev, trace, "middle")
-                target_dir = os.path.join(database, date, expr, dev, trace, "middle")
-                makedir(target_dir)
-                filenames = os.listdir(source_dir)
-                main()
-    t.toc()  # Time elapsed since t.tic()
-    # *****************************************************************************
-
-
-
-
-    # t = TicToc()  # create instance of class
-    # t.tic()  # Start timer
-    # # --------------------- (1) convert only one file (set arguments) ---------------------
-    # if args.input:
-    #     fin = args.input
-    #     ### Check the input filename format, and whether users specify output filename.
-    #     if not fin.endswith(".txt"):
-    #         print("Input: '{}' does not endswith 'txt', the program is terminated.".format(fin))
-    #         sys.exit()
-    #     fout = "{}_rrc.csv".format(fin[:-4])
-    #     ### decoding ...
-    #     print(">>>>> convert from '{}' into '{}'...".format(fin, fout))
-    #     xml_to_csv_rrc(fin, fout)
-    #     print()
-    #     t.toc()
-    #     sys.exit()
-
-    # # --------------------- (2) convert files in one directory (set arguments) ---------------------
-    # if args.indir:
-    #     err_handles = []
-    #     input_path = args.indir
-    #     ### Check if the input directory exists
-    #     if not os.path.isdir(input_path):
-    #         print("FileExistsError: directory '{}' does not exists, the program is terminated.".format(input_path))
-    #         sys.exit()
-    #     output_path = args.outdir if args.outdir else input_path
-    #     filenames = os.listdir(input_path)
-    #     pprint(filenames)
-    #     for filename in filenames:
-    #         # if not filename.endswith(".pcap"):
-    #         if not filename.startswith("diag_log") or not filename.endswith(".txt"):
-    #             continue
-    #         fin = os.path.join(input_path, filename)
-    #         fout = os.path.join(output_path, "{}_rrc.csv".format(filename[:-4]))
-    #         makedir(output_path)
-    #         ### decoding ...
-    #         print(">>>>> convert from '{}' into '{}'...".format(fin, fout))
-    #         xml_to_csv_rrc(fin, fout)
-    #     print()
-    #     t.toc()
-    #     sys.exit()
-
-    # # --------------------- (3) decode a batch of files (User Settings) ---------------------
-    # ### iteratively decode every diag_log.txt file
-    # for _exp, (_times, _rounds) in Exp_Name.items():
-    #     ### Check if the directories exist
-    #     exp_path = os.path.join(db_path, _exp)
-    #     print(exp_path)
-    #     exp_dirs = []
-    #     for i, dev in enumerate(devices):
-    #         if _rounds:
-    #             exp_dirs.append([os.path.join(exp_path, dev, _round) for _round in _rounds])
-    #         else:
-    #             _rounds = sorted(os.listdir(os.path.join(exp_path, dev)))
-    #             exp_dirs.append([os.path.join(exp_path, dev, item) for item in _rounds])
-    #         exp_dirs[i] = [item for item in exp_dirs[i] if os.path.isdir(item)]
-    #         print(_times)
-    #         pprint(exp_dirs[i])
-    #         if len(exp_dirs[i]) != _times:
-    #             print("************************************************************************************************")
-    #             print("Warning: the number of directories does not match your specific number of experiment times.")
-    #             print("************************************************************************************************")
-    #             print()
-    #             sys.exit()
-    #     print()
-    #     ### Check if a diag_log.txt file exists, and then run decoding
-    #     print(_exp)
-    #     for j in range(_times):
-    #         for i, dev in enumerate(devices):
-    #             print(exp_dirs[i][j])
-    #             dir = os.path.join(exp_dirs[i][j], "data")
-    #             filenames = os.listdir(dir)
-    #             for filename in filenames:
-    #                 # if "diag_log" not in filename or not filename.endswith(".mi2log"):
-    #                 if not filename.startswith("diag_log") or not filename.endswith(".txt"):
-    #                     continue
-    #                 # print(filename)
-    #                 fin = os.path.join(dir, filename)
-    #                 fout = os.path.join(dir, "{}_rrc.csv".format(filename[:-4]))
-    #                 # makedir(os.path.join(dir, "..", "data"))
-    #                 ### decoding ...
-    #                 print(">>>>> decode from '{}' into '{}'...".format(fin, fout))
-    #                 xml_to_csv_rrc(fin, fout)
-    #         print()
-    # t.toc()
+    if args.onefile is None:
+        
+        if args.dates is not None:
+            dates = sorted(args.dates)
+        else:
+            raise TypeError("Please specify the date you want to process.")
+        
+        metadatas = metadata_loader(dates)
+        print('\n================================ Start Processing ================================')
+        
+        pop_error_message(signal='Converting mi2log_xml to rrc.csv', stdout=True)
+        for metadata in metadatas:
+            try:
+                print(metadata)
+                print('--------------------------------------------------------')
+                raw_dir = os.path.join(metadata[0], 'raw')
+                middle_dir = os.path.join(metadata[0], 'middle')
+                data_dir = os.path.join(metadata[0], 'data')
+                makedir(data_dir)
+                
+                sync_dir = os.path.abspath(os.path.join(metadata[0], '../../..', 'sync'))
+                sync_file = os.path.join(sync_dir, 'time_sync_{}.json'.format(metadata[4]))
+                if os.path.isfile(sync_file):
+                    with open(sync_file, 'r') as f:
+                        sync_mapping = json.load(f)
+                else:
+                    sync_mapping = None
+                
+                # print('sync_mapping:', sync_mapping)
+                
+                try:
+                    filenames = [s for s in os.listdir(raw_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
+                except:
+                    filenames = [s for s in os.listdir(middle_dir) if s.startswith('diag_log') and s.endswith(('.xml', '.txt'))]
+                
+                fin = os.path.join(raw_dir, filenames[0])
+                # ******************************************************************
+                t = TicToc(); t.tic()
+                fout = os.path.join(data_dir, filenames[0].replace('.xml', '_rrc.csv').replace('.txt', '_rrc.csv'))
+                print(f">>>>> {fin} -> {fout}")
+                xml_to_csv_rrc(fin, fout)
+                mi_compensate(fout, sync_mapping=sync_mapping)
+                t.toc(); print()
+                # ******************************************************************
+                
+                print()
+                    
+            except Exception as e:
+                pop_error_message(e, locate=metadata, raise_flag=True)
+                
+        pop_error_message(signal='Finish converting mi2log_xml to rrc.csv', stdout=True)
+        
+    else:
+        print(args.onefile)
