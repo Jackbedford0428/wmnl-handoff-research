@@ -23,7 +23,7 @@ parser.add_argument("-b", "--bitrate", type=str,
 parser.add_argument("-l", "--length", type=str,
                     help="length of buffer to read or write in bytes (packet size)", default="250")
 parser.add_argument("-t", "--time", type=int,
-                    help="time in seconds to transmit for (default 1 hour = 3600 secs)", default=3600)
+                    help="time in seconds to transmit for (default 1.5 hour = 5400 secs)", default=5400)
 args = parser.parse_args()
 
 devices = []
