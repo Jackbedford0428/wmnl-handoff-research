@@ -92,7 +92,7 @@ udp_addr = {}
 
 def fill_udp_addr(s):
 
-    indata, addr = s.recvfrom(1024)
+    indata, addr = s.recvfrom(1500)
     udp_addr[s] = addr 
 
 def receive(s, dev, port):

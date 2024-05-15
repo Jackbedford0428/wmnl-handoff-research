@@ -89,7 +89,7 @@ def receive(s, dev): # s should be rx_socket
     while not stop_threads:
         try:
 
-            indata, _ = s.recvfrom(1024)
+            indata, _ = s.recvfrom(1500)
 
             try: start_time
             except NameError:
