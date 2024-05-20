@@ -26,12 +26,6 @@ __all__ = [
 ]
 
 
-# ===================== Arguments =====================
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--onefile", type=str, help="input filepath")
-parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
-args = parser.parse_args()
-
 THRESHOLD = 100e-3  # (seconds)
 
 
@@ -297,6 +291,12 @@ def get_statistics(df, fout, thr=100e-3, dump_log=RECORDS):
 
 # ===================== Main Process =====================
 if __name__ == "__main__":
+    # ===================== Arguments =====================
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--onefile", type=str, help="input filepath")
+    parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
+    args = parser.parse_args()
+    
     if args.onefile is None:
         
         if args.dates is not None:

@@ -28,18 +28,11 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(1, parent_dir)
 
 from myutils import *
-from xml_mi_sync import *
+# from xml_mi_sync import *
 
 __all__ = [
     "xml_to_csv_nr_ml1",
 ]
-
-
-# ===================== Arguments =====================
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--onefile", type=str, help="input filepath")
-parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
-args = parser.parse_args()
 
 
 # ===================== Utils =====================
@@ -179,6 +172,12 @@ def xml_to_csv_nr_ml1(fin, fout):
 
 # ===================== Main Process =====================
 if __name__ == "__main__":
+    # ===================== Arguments =====================
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--onefile", type=str, help="input filepath")
+    parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
+    args = parser.parse_args()
+    
     if args.onefile is None:
         
         if args.dates is not None:

@@ -37,15 +37,9 @@ sys.path.insert(1, parent_dir)
 from myutils import *
 
 __all__ = [
-    'parse_packet_info',
+    'parse_pkt_info',
 ]
 
-
-# ===================== Arguments =====================
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--onefile", type=str, help="input filepath")
-parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
-args = parser.parse_args()
 
 class Payl:
     LENGTH = 250              # (Bytes)
@@ -176,6 +170,12 @@ def parse_pkt_info(fin, fout, side, direction, protoc, locate='.'):
 
 # ===================== Main Process =====================
 if __name__ == "__main__":
+    # ===================== Arguments =====================
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--onefile", type=str, help="input filepath")
+    parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
+    args = parser.parse_args()
+    
     if args.onefile is None:
         
         if args.dates is not None:

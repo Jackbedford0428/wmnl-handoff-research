@@ -41,13 +41,6 @@ __all__ = [
 ]
 
 
-# ===================== Arguments =====================
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--onefile", type=str, help="input filepath")
-parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
-args = parser.parse_args()
-
-
 # ===================== Utils =====================
 HASH_SEED = time.time()
 LOGFILE = os.path.basename(__file__).replace('.py', '') + '_' + query_datetime() + '-' + generate_hex_string(HASH_SEED, 5) + '.log'
@@ -121,6 +114,12 @@ def pcap_to_csv(fin, fout):
 
 # ===================== Main Process =====================
 if __name__ == "__main__":
+    # ===================== Arguments =====================
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--onefile", type=str, help="input filepath")
+    parser.add_argument("-d", "--dates", type=str, nargs='+', help="date folders to process")
+    args = parser.parse_args()
+    
     if args.onefile is None:
         
         if args.dates is not None:
