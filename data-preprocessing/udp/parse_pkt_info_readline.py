@@ -113,20 +113,34 @@ def parse_pkt_info(fin, fout, side, direction, protoc, locate='.'):
                 continue
             
             # udp/tcp
-            if protoc == "udp" and int(row['ip.proto']) != UDP:
+            if row['ip.proto'].isdigit():
+                ip_proto = int(row["ip.proto"])
+            else:
+                ip_proto = int(row["ip.proto"].split(',')[0])
+
+            if protoc == "udp" and ip_proto != UDP:
                 continue
-            elif protoc == "tcp" and int(row['ip.proto']) != TCP:
+            elif protoc == "tcp" and ip_proto != TCP:
                 continue
             
             # check customized packet: length of udp header is 8 Bytes
-            if protoc == "udp" and not ((int(row['udp.length']) > Payl.LENGTH) and (int(row['udp.length']) % Payl.LENGTH == 8)):
-                continue
+            if protoc == "udp":
+                length = row['udp.length']
+                if not length.isdigit():
+                    length = int(length.split(',')[0])
+                else:
+                    length = int(length)
+
+                if not (length > Payl.LENGTH) and (length % Payl.LENGTH == 8):
+                    continue
+
             elif protoc == "tcp" and Payl.TAG not in row['tcp.payload']:
                 continue
             
             # decompress the repacked segments
             payload = row['udp.payload']
-            rpkg_num = int(row['udp.length']) // Payl.LENGTH
+            # rpkg_num = int(row['udp.length']) // Payl.LENGTH
+            rpkg_num = length // Payl.LENGTH
             offset = [s * Payl.LENGTH * 2 for s in list(range(rpkg_num))]  # 1-Byte: 2-hex-digits
             
             sequence_list = []

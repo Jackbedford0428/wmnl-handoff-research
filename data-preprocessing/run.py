@@ -25,5 +25,5 @@ if __name__ == "__main__":
     else:
         raise TypeError("Please specify the date you want to process.")
 
-    Run_Test_List('python3 ./udp_preprocessing_v3.py', metadatas, cpu_count=8)
+    Run_Test_List('python3 ./udp_preprocessing_v3.py', metadatas, cpu_count=15)
     
