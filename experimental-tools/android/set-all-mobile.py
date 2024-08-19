@@ -46,6 +46,7 @@ print("-----------------------------------")
 
 tools = ["git", "iperf3", "python3", "tcpdump", "tmux", "vim"]
 for device, info in zip(devices, devices_info):
+    # print(info[2], device.shell("su -c 'cd /sdcard/wmnl-handoff-research && /data/git fetch && /data/git checkout -b experiment origin/experiment'"))
     print(info[2], device.shell("su -c 'cd /sdcard/wmnl-handoff-research && /data/git fetch && /data/git checkout experiment && /data/git pull'"))
     print("-----------------------------------")
     if info[2][:2] == "sm":
