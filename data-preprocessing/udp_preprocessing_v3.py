@@ -280,8 +280,8 @@ if __name__ == "__main__":
             df = get_latency(df.copy(), direction=direction, sync_mapping=sync_mapping, thr=THRESHOLD)
             df.to_csv(fout, index=False)
             print(f">>>>> {fout1}")
-            with open(RECORDS, "a") as f:
-                f.write(f">>>>> {fout1}\n")
+            # with open(RECORDS, "a") as f:
+            #     f.write(f">>>>> {fout1}\n")
             get_statistics(df, fout1, thr=THRESHOLD)
             t.toc(); print()
             # ******************************************************************

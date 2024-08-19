@@ -365,7 +365,6 @@ if __name__ == "__main__":
                 print()
                     
             except Exception as e:
-                pass
                 pop_error_message(e, locate=metadata, raise_flag=True)
                 
         pop_error_message(signal='Finish parsing loss & latency', stdout=True)
